@@ -4,3 +4,9 @@
 [submodule "modules/module"]
 	path = modules/module
 	url = https://github.com/WotScript/module
+[submodule "modules/config"]
+	path = modules/config
+	url = https://github.com/WotScript/config
+[submodule "modules/cxxopts"]
+	path = modules/cxxopts
+	url = https://github.com/jarro2783/cxxopts

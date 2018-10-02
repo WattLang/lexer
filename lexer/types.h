@@ -8,11 +8,30 @@
 #include <iostream>
 #include <optional>
 
+#include "constants.h"
+#include "libs.h"
+
 
 namespace ws::lexer {
+    using json = nlohmann::json;  // less verbose
+
+
     // Types.
     struct Token {
         std::string type, val;
+
+
+        json as_json() const {
+            return {
+                {"type", type},
+                {"val", val}
+            };
+        }
+
+
+        std::string as_string() const {
+            return as_json().dump(ws::lexer::INDENT_SIZE);
+        }
     };
 
     struct Code;  // Forward declare.
@@ -31,7 +50,7 @@ namespace ws::lexer {
 namespace ws::lexer {
     // Print Token.
     std::ostream& operator<<(std::ostream& os, const ws::lexer::Token& tok) {
-        os << "{\"" << tok.type << "\", \"" << tok.val << "\"}";
+        os << tok.as_string();
         return os;
     }
 
@@ -41,14 +60,11 @@ namespace ws::lexer {
         std::ostream& os,
         const ws::lexer::TokenContainer& toks
     ) {
-        if (toks.empty())
-            return (os << "[]");
+        json j;
 
-        os << "[\n";
+        for (const auto& tok: toks)
+            j.emplace_back(tok.as_json());
 
-        for (auto it = toks.begin(); it != toks.end() - 1; ++it)
-            os << '\t' << *it << ", \n";
-
-        return (os << '\t' << toks.back() << "\n]");
+        return (os << j.dump(ws::lexer::INDENT_SIZE));
     }
 }

@@ -1,22 +1,23 @@
 #include <iostream>
 
+#include "lexer/constants.h"
 #include "lexer/types.h"
 #include "lexer/exceptions.h"
 #include "lexer/code.h"
 #include "lexer/lexer.h"
 #include "lexer/utils.h"
-
-#include "modules/module/module.h"
-#include "modules/json/single_include/nlohmann/json.hpp"
+#include "lexer/libs.h"
 
 
 
+namespace lex = ws::lexer;
+using json = nlohmann::json;
 
 
 
 
-ws::lexer::Code code("123 + 456");  // The input code.
-ws::lexer::Matcher match;  // Defines handler callbacks for characters.
+
+
 
 
 
@@ -24,22 +25,35 @@ ws::lexer::Matcher match;  // Defines handler callbacks for characters.
 
 
 int main(int argc, char const *argv[]) {
+    // Input stream.
+    auto contents = ws::module::receive_all(lex::BUFFER_SIZE);
+
+
+
+
+    lex::Code code(contents);  // The input code.
+    lex::Matcher match;  // Defines handler callbacks for characters.
+    lex::TokenContainer tokens;
+
+
 
     // Digits.
     insert_case(match, "0123456789",
-        [] (ws::lexer::Code& c, const std::string& chars) -> std::optional<ws::lexer::Token> {
+        [] (lex::Code& c, const std::string& chars) -> std::optional<lex::Token> {
+            std::string valid_chars = "0123456789.";
+
             auto builder = c.read_while([&] (char c) {
-                return (chars.find(c) != std::string::npos);
+                return (valid_chars.find(c) != std::string::npos);
             });
 
-            return ws::lexer::Token{"number", builder};
+            return lex::Token{"number", builder};
         }
     );
 
 
     // Whitespace.
     insert_case(match, "\n\t ",
-        [] (ws::lexer::Code& c, const std::string& chars) -> std::optional<ws::lexer::Token> {
+        [] (lex::Code& c, const std::string& chars) -> std::optional<lex::Token> {
             auto builder = c.read_while([&] (char c) {
                 return (chars.find(c) != std::string::npos);
             });
@@ -51,12 +65,24 @@ int main(int argc, char const *argv[]) {
 
     // Operators.
     insert_case(match, "+-*/",
-        [] (ws::lexer::Code& c, const std::string& chars) -> std::optional<ws::lexer::Token> {
+        [] (lex::Code& c, const std::string& chars) -> std::optional<lex::Token> {
             auto builder = c.read_while([&] (char c) {
                 return (chars.find(c) != std::string::npos);
             });
 
-            return ws::lexer::Token{"operator", builder};
+            return lex::Token{"operator", builder};
+        }
+    );
+
+
+    // Scopes.
+    insert_case(match, "{}[]()",
+        [] (lex::Code& c, const std::string& chars) -> std::optional<lex::Token> {
+            auto builder = c.read_while([&] (char c) {
+                return (chars.find(c) != std::string::npos);
+            });
+
+            return lex::Token{"scope", builder};
         }
     );
 
@@ -65,18 +91,22 @@ int main(int argc, char const *argv[]) {
 
 
 
+    try {
+        // Run the lexer on the code and pass in an error handler too.
+        tokens = lex::lexer(code, match, [&] (const std::exception& e) {
+            ws::module::errorln("Invalid character: '", code.current(), "'!");
+            ws::module::errorln(ws::module::tabs(1), "Terminating...");
+
+            throw lex::LexicalFailure("Error!");
+        });
+
+    } catch (const lex::LexicalFailure&) {
+        return 1;
+    }
 
 
-
-    // Run the lexer on the code and pass in an error handler too.
-    auto tokens = ws::lexer::lexer(code, match, [&] (const std::exception& e) {
-        std::cerr << "Oh dear god!\n";
-        throw ws::lexer::LexicalFailure("Unrecoverable error!");
-    });
-
-
-    // Print the tokens inside the container.
-    std::cout << tokens << std::endl;
+    // Pipe the tokens inside the container.
+    ws::module::pipe(tokens);
 
 
     return 0;

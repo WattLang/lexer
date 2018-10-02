@@ -1,2 +1,2 @@
 all:
-	clang++ -std=c++17 main.cpp -o build/lexer
+	g++ --std=c++17 -I modules/ main.cpp -o build/lexer
