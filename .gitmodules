@@ -1,6 +1,6 @@
-[submodule "module"]
-	path = module
-	url = https://github.com/WotScript/module
 [submodule "modules/json"]
 	path = modules/json
 	url = https://github.com/nlohmann/json
+[submodule "modules/module"]
+	path = modules/module
+	url = https://github.com/WotScript/module
