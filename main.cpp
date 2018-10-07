@@ -1,8 +1,8 @@
 #include <iostream>
-#include <set>
+#include <unordered_set>
 #include <chrono>
 #include <string>
-#include <map>
+#include <unordered_map>
 
 
 // Lexer stuff.
@@ -63,20 +63,24 @@ int main(int, char const *[]) {
         [&] (lex::Code& code, const std::string&) {
             WS_LOG_HEADING("String handler.")
 
-            code.next();
+            auto current_column = globals::pos.column;
+
+            code.next(); globals::pos.column++; // Skip opening quote.
 
             auto builder = code.read_while([&] (char c) {
                 globals::pos.column++;
 
-                if (c == '\"' and code.peek(-1) != '\\')
-                    return false;
-
-                return true;
+                // Remember, c is always ptr + 1.
+                return (not (c == '"' and code.current() != '\\'));
             });
 
-            code.next();
+            code.next(); globals::pos.column++; // Skip ending quote.
 
-            return lex::Token{};
+            return lex::Token{
+                {globals::pos.line, current_column},
+                {"literal", "string"},
+                builder
+            };
         }
     );
 
@@ -87,7 +91,7 @@ int main(int, char const *[]) {
             WS_LOG_HEADING("Digit handler.")
 
             auto current_column = globals::pos.column;
-            std::string valid_chars = "0123456789.";
+            const std::string valid_chars = "0123456789.";
 
             auto builder = code.read_while([&] (char c) {
                 globals::pos.column++;
@@ -133,7 +137,7 @@ int main(int, char const *[]) {
                 return (chars.find(c) != std::string::npos);
             });
 
-            static std::map<std::string, std::string> operators = {
+            static const std::unordered_map<std::string, std::string> operators = {
                 {"+",  "plus"},
                 {"-",  "minus"},
                 {"*",  "multiply"},
@@ -157,7 +161,7 @@ int main(int, char const *[]) {
             };
 
             if (operators.find(builder) == operators.end()) {
-                throw lex::LexicalFailure(
+                throw lex::LexicalError(
                     "ill-formed operator '" + builder + "' in program."
                 );
             }
@@ -165,7 +169,7 @@ int main(int, char const *[]) {
 
             return lex::Token{
                 {globals::pos.line, current_column},
-                {"operator", operators[builder]},
+                {"operator", operators.at(builder)},
                 builder
             };
         }
@@ -178,9 +182,10 @@ int main(int, char const *[]) {
         [&] (lex::Code& code, const std::string&) {
             WS_LOG_HEADING("Block handler.")
 
+            auto current_column = globals::pos.column;
             auto chr = code.current();
 
-            static std::map<char, std::string> type = {
+            static const std::unordered_map<char, std::string> type = {
                 {'(', "parenthesis"},
                 {'{', "brace"},
                 {'[', "bracket"}
@@ -189,8 +194,8 @@ int main(int, char const *[]) {
             globals::pos.column++;
 
             return lex::Token{
-                globals::pos,
-                {type[chr], "left"},
+                {globals::pos.line, current_column},
+                {type.at(chr), "left"},
                 chr
             };
         }
@@ -200,9 +205,10 @@ int main(int, char const *[]) {
         [&] (lex::Code& code, const std::string&) {
             WS_LOG_HEADING("Block handler.")
 
+            auto current_column = globals::pos.column;
             auto chr = code.current();
 
-            static std::map<char, std::string> type = {
+            static const std::unordered_map<char, std::string> type = {
                 {')', "parenthesis"},
                 {'}', "brace"},
                 {']', "bracket"}
@@ -211,8 +217,8 @@ int main(int, char const *[]) {
             globals::pos.column++;
 
             return lex::Token{
-                globals::pos,
-                {type[chr], "right"},
+                {globals::pos.line, current_column},
+                {type.at(chr), "right"},
                 chr
             };
         }
@@ -228,14 +234,14 @@ int main(int, char const *[]) {
 
 
             auto current_column = globals::pos.column;
-            std::string valid_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789";
+            const std::string valid_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789";
 
             auto builder = code.read_while([&] (char c) {
                 globals::pos.column++;
                 return (valid_chars.find(c) != std::string::npos);
             });
 
-            static std::set<std::string> reserved_idents = {
+            static const std::unordered_set<std::string> reserved_idents = {
                 "if", "else",
                 "while", "for", "loop",
                 "struct",
@@ -270,10 +276,10 @@ int main(int, char const *[]) {
         [&] (lex::Code& code, const std::string&) {
             WS_LOG_HEADING("Seperator handler.")
 
-
+            auto current_column = globals::pos.column;
             auto chr = code.current();
 
-            static std::map<char, std::string> type = {
+            static const std::unordered_map<char, std::string> type = {
                 {':', "semicolon"},
                 {';', "colon"},
                 {',', "comma"},
@@ -283,8 +289,8 @@ int main(int, char const *[]) {
             globals::pos.column++;
 
             return lex::Token{
-                globals::pos,
-                {"seperator", type[chr]},
+                {globals::pos.line, current_column},
+                {"seperator", type.at(chr)},
                 chr
             };
         }
@@ -303,25 +309,63 @@ int main(int, char const *[]) {
 
 
 
+    auto position_string = [&] () {
+        return std::string{
+            " on line " +
+            std::to_string(globals::pos.line) +
+            ", column " +
+            std::to_string(globals::pos.column) +
+            ": "
+        };
+    };
+
+
 
     try {
         // Run the lexer on the code and pass in an error handler too.
-        tokens = lex::run(code, match,
-            [&] (const lex::LexicalFailure& e) {
-                ws::module::errorln(
-                    "lexical error on line ", globals::pos.line,
-                    ", column ", globals::pos.column, ":",
-                    ws::module::lines(1), ws::module::tabs(1),
-                    e.msg
-                );
+        tokens = lex::run(code, match);
 
-                throw lex::LexicalFailure("error occured!");
-            }
+    } catch (const lex::LexicalNotice& e) {
+        ws::module::errorln(
+            "lexical notice occured", position_string(),
+            ws::module::lines(1), ws::module::tabs(1),
+            e.get_msg()
         );
 
-    } catch (const lex::LexicalFailure&) {
-        return 1;  // There was an error, so return non-zero
+        return 1;
+
+    } catch (const lex::LexicalWarn& e) {
+        ws::module::errorln(
+            "lexical warn occured", position_string(),
+            ws::module::lines(1), ws::module::tabs(1),
+            e.get_msg()
+        );
+
+        return 2;
+
+    } catch (const lex::LexicalError& e) {
+        ws::module::errorln(
+            "lexical error occured", position_string(),
+            ws::module::lines(1), ws::module::tabs(1),
+            e.get_msg()
+        );
+
+        return 3;
+
+    } catch (const lex::LexicalInternalError& e) {
+        ws::module::errorln(
+            "internal error occured", position_string(),
+            ws::module::lines(1), ws::module::tabs(1),
+            e.get_msg()
+        );
+
+        return 4;
     }
+
+
+
+
+
 
 
 
@@ -341,20 +385,18 @@ int main(int, char const *[]) {
 
 
     // Stats.
-    WS_LEXER_DEBUG(
-        ws::module::printer << ws::module::lines(ws::lexer::HEADING_LINE_GAP);
-        ws::module::successln(ws::module::style::bold, "Statistics");
+    ws::module::printer << ws::module::lines(ws::lexer::HEADING_LINE_GAP);
+    ws::module::successln(ws::module::style::bold, "Statistics");
 
 
 
-        ws::module::successln(
-            ws::module::tabs(1), "Tokens   ", tokens.size()
-        );
+    ws::module::successln(
+        ws::module::tabs(1), "Tokens   ", tokens.size()
+    );
 
-        ws::module::successln(
-            ws::module::tabs(1), "Duration ", duration, "ms"
-        )
-    )
+    ws::module::successln(
+        ws::module::tabs(1), "Duration ", duration, "ms"
+    );
 
 
     return 0;

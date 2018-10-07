@@ -11,8 +11,7 @@
 namespace ws::lexer {
     TokenContainer run(
         ws::lexer::Code& code,
-        ws::lexer::Matcher match,
-        std::function<void(ws::lexer::LexicalFailure)> error_handler
+        ws::lexer::Matcher match
     ) {
         TokenContainer tokens;
 
@@ -22,32 +21,26 @@ namespace ws::lexer {
 
 
             // Check if current character has an associated handler.
-            try {
-                MatchEntry search;
+            MatchEntry search;
 
-                if (match.find(c) != match.end())
-                    search = match.at(c);
+            if (match.find(c) != match.end())
+                search = match.at(c);
 
-                else
-                    throw ws::lexer::LexicalFailure(
-                        "stray '" + std::string{c} + "' in program."
-                    );
-
-
-                // Run the handler and pass in a reference to
-                // the code instance and the charset.
-                auto result = search.second(code, search.first);
+            else
+                throw ws::lexer::LexicalInternalError(
+                    "stray '" + std::string{c} + "' in program."
+                );
 
 
-                // Push the optionally returned token to the container.
-                if (not result.is_empty) {
-                    WS_LOG("Append token.")
-                    tokens.push_back(result);
-                }
+            // Run the handler and pass in a reference to
+            // the code instance and the charset.
+            auto result = search.second(code, search.first);
 
 
-            } catch (const ws::lexer::LexicalFailure& e) {
-                error_handler(e);
+            // Push the optionally returned token to the container.
+            if (not result.is_empty) {
+                WS_LOG("Append token.")
+                tokens.push_back(result);
             }
 
 

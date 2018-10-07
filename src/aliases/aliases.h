@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include <functional>
-#include <map>
+#include <unordered_map>
 #include <iostream>
 
 
@@ -25,7 +25,7 @@ namespace ws::lexer {
     using TokenContainer = std::vector<ws::lexer::Token>;
 
     using MatchEntry = std::pair<std::string, Handler>;
-    using Matcher    = std::map<char, ws::lexer::MatchEntry>;
+    using Matcher    = std::unordered_map<char, ws::lexer::MatchEntry>;
 }
 
 

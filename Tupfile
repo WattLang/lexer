@@ -1,6 +1,6 @@
 CC=clang++
 WFLAGS=-Wall -Wextra
-CFLAGS=--std=c++17 -O3 -m64
+CFLAGS=--std=c++17 -Ofast -march=native -funroll-loops -m64
 LFLAGS=-flto
 INCLUDE=-I src/ -I modules/
 BUILD_DIR=build

@@ -11,8 +11,9 @@ let tally = 0;
 
 
 let active_monitors = run "xrandr --query"
-                   |> run "grep 'connected'"
+                   |> run "grep \"connected\""
                    |> run "cut -d' ' -f1";
+
 
 let current_focused_monitor = run "bspc query -M -m focused --names";
 
