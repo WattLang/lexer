@@ -1,20 +1,26 @@
 #include <iostream>
 #include <set>
+#include <chrono>
+#include <string>
+#include <map>
 
-#include "src/macros.h"
-#include "src/aliases/aliases.h"
-#include "src/token/token.h"
-#include "src/position/position.h"
-#include "src/exceptions.h"
-#include "src/code/code.h"
-#include "src/run/run.h"
-#include "src/utils/utils.h"
-#include "src/libs/module.h"
+
+// Lexer stuff.
+#include <macros.h>
+#include <aliases/aliases.h>
+#include <token/token.h>
+#include <position/position.h>
+#include <exceptions.h>
+#include <code/code.h>
+#include <run/run.h>
+#include <utils/utils.h>
+#include <libs/module.h>
+
+
 
 
 
 namespace lex = ws::lexer;
-using json = nlohmann::json;
 
 
 
@@ -28,17 +34,57 @@ namespace globals {
 
 
 
+
 int main(int, char const *[]) {
+    auto start = std::chrono::steady_clock::now();
+
+
     lex::Matcher match;  // Defines handler callbacks for characters.
 
+
+
+    // Comments.
+    ws::lexer::insert_case(match, "#",
+        [&] (lex::Code& code, const std::string&) {
+            WS_LOG_HEADING("Comment handler.")
+
+            auto builder = code.read_while([&] (char c) {
+                globals::pos.column++;
+                return (c != '\n');
+            });
+
+            return lex::Token{};
+        }
+    );
+
+
+    // Strings.
+    ws::lexer::insert_case(match, "\"",
+        [&] (lex::Code& code, const std::string&) {
+            WS_LOG_HEADING("String handler.")
+
+            code.next();
+
+            auto builder = code.read_while([&] (char c) {
+                globals::pos.column++;
+
+                if (c == '\"' and code.peek(-1) != '\\')
+                    return false;
+
+                return true;
+            });
+
+            code.next();
+
+            return lex::Token{};
+        }
+    );
 
 
     // Digits.
     ws::lexer::insert_case(match, "0123456789",
         [&] (lex::Code& code, const std::string&) {
-            WS_LEXER_DEBUG(ws::module::noticeln(
-                ws::module::tabs(1), ws::module::style::bold, "Digit handler."
-            ))
+            WS_LOG_HEADING("Digit handler.")
 
             auto current_column = globals::pos.column;
             std::string valid_chars = "0123456789.";
@@ -60,10 +106,6 @@ int main(int, char const *[]) {
     // Whitespace.
     ws::lexer::insert_case(match, "\n\t ",
         [&] (lex::Code& code, const std::string&) {
-            WS_LEXER_DEBUG(ws::module::noticeln(
-                ws::module::tabs(1), ws::module::style::bold, "Whitespace handler."
-            ))
-
             auto chr = code.current();
 
             if (chr == '\n') {
@@ -80,11 +122,9 @@ int main(int, char const *[]) {
 
 
     // Operators.
-    ws::lexer::insert_case(match, "<>+-*/=",
+    ws::lexer::insert_case(match, "|<>+-*/=",
         [&] (lex::Code& code, const std::string& chars) {
-            WS_LEXER_DEBUG(ws::module::noticeln(
-                ws::module::tabs(1), ws::module::style::bold, "Operator handler."
-            ))
+            WS_LOG_HEADING("Operator handler.")
 
             auto current_column = globals::pos.column;
 
@@ -99,6 +139,11 @@ int main(int, char const *[]) {
                 {"*",  "multiply"},
                 {"/",  "divide"},
 
+                {"+=",  "plus_mutate"},
+                {"-=",  "minus_mutate"},
+                {"*=",  "multiply_mutate"},
+                {"/=",  "divide_mutate"},
+
                 {"<",  "less"},
                 {">",  "greater"},
 
@@ -106,12 +151,14 @@ int main(int, char const *[]) {
                 {">=", "greater_or_equal"},
                 {"==", "compare"},
 
-                {"=",  "assign"}
+                {"=",  "assign"},
+
+                {"|>", "pipe"}
             };
 
             if (operators.find(builder) == operators.end()) {
                 throw lex::LexicalFailure(
-                    "Unknown operator: '" + builder + "'!"
+                    "ill-formed operator '" + builder + "' in program."
                 );
             }
 
@@ -129,9 +176,7 @@ int main(int, char const *[]) {
     // Block.
     ws::lexer::insert_case(match, "({[",
         [&] (lex::Code& code, const std::string&) {
-            WS_LEXER_DEBUG(ws::module::noticeln(
-                ws::module::tabs(1), ws::module::style::bold, "Block handler."
-            ))
+            WS_LOG_HEADING("Block handler.")
 
             auto chr = code.current();
 
@@ -153,9 +198,7 @@ int main(int, char const *[]) {
 
     ws::lexer::insert_case(match, ")}]",
         [&] (lex::Code& code, const std::string&) {
-            WS_LEXER_DEBUG(ws::module::noticeln(
-                ws::module::tabs(1), ws::module::style::bold, "Block handler."
-            ))
+            WS_LOG_HEADING("Block handler.")
 
             auto chr = code.current();
 
@@ -181,9 +224,8 @@ int main(int, char const *[]) {
     // Identifiers.
     ws::lexer::insert_case(match, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_",
         [&] (lex::Code& code, const std::string&) {
-            WS_LEXER_DEBUG(ws::module::noticeln(
-                ws::module::tabs(1), ws::module::style::bold, "Identifier handler."
-            ))
+            WS_LOG_HEADING("Idenifier handler.")
+
 
             auto current_column = globals::pos.column;
             std::string valid_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789";
@@ -226,9 +268,8 @@ int main(int, char const *[]) {
     // Seperators
     ws::lexer::insert_case(match, ":;,.",
         [&] (lex::Code& code, const std::string&) {
-            WS_LEXER_DEBUG(ws::module::noticeln(
-                ws::module::tabs(1), ws::module::style::bold, "Seperator handler."
-            ))
+            WS_LOG_HEADING("Seperator handler.")
+
 
             auto chr = code.current();
 
@@ -248,19 +289,6 @@ int main(int, char const *[]) {
             };
         }
     );
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -297,11 +325,36 @@ int main(int, char const *[]) {
 
 
 
+
+    auto end = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
+
+
     // Pipe the tokens inside the container.
     ws::module::pipe(tokens);
 
 
-    ws::module::successln("Finished!");
+    WS_LEXER_DEBUG(ws::module::printer << ws::module::lines(ws::lexer::HEADING_LINE_GAP))
+    ws::module::successln(ws::module::style::bold, "Finished!");
+
+
+
+    // Stats.
+    WS_LEXER_DEBUG(
+        ws::module::printer << ws::module::lines(ws::lexer::HEADING_LINE_GAP);
+        ws::module::successln(ws::module::style::bold, "Statistics");
+
+
+
+        ws::module::successln(
+            ws::module::tabs(1), "Tokens   ", tokens.size()
+        );
+
+        ws::module::successln(
+            ws::module::tabs(1), "Duration ", duration, "ms"
+        )
+    )
 
 
     return 0;

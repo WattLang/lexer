@@ -1,4 +1,5 @@
 CC=clang++
+WFLAGS=-Wall -Wextra
 CFLAGS=--std=c++17 -O3 -m64
 LFLAGS=-flto
 INCLUDE=-I src/ -I modules/
@@ -17,8 +18,8 @@ TARGET=lexer
     src/type/*.cpp                         \
     src/utils/*.cpp                        \
                                            \
-|> $(CC) $(CFLAGS) $(INCLUDE) -c %f -o %o  \
+|> $(CC) $(WFLAGS) $(CFLAGS) $(INCLUDE) -c %f -o %o  \
 |> $(BUILD_DIR)/%B.o
 
 
-: $(BUILD_DIR)/*.o |> $(CC) $(LFLAGS) %f -o %o |> $(BUILD_DIR)/$(TARGET)
+: $(BUILD_DIR)/*.o |> $(CC) $(WFLAGS) $(LFLAGS) %f -o %o |> $(BUILD_DIR)/$(TARGET)

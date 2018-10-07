@@ -41,15 +41,9 @@ namespace ws::lexer {
 
                 // Push the optionally returned token to the container.
                 if (not result.is_empty) {
-                    WS_LEXER_DEBUG(ws::module::noticeln(
-                        ws::module::tabs(1), "Append token."
-                    ))
-
+                    WS_LOG("Append token.")
                     tokens.push_back(result);
-
                 }
-
-                WS_LEXER_DEBUG(ws::module::printer << std::endl)
 
 
             } catch (const ws::lexer::LexicalFailure& e) {

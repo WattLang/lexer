@@ -11,18 +11,15 @@ namespace ws::lexer {
         std::string builder;
 
 
-        WS_LEXER_DEBUG(ws::module::noticeln(
-            ws::module::tabs(2), "Start building..."
-        ))
+        WS_LOG(ws::module::tabs(1) + "Building")
 
 
         while (true) {
             char c = current();
             builder += c;  // Append the character to the builder.
 
-            WS_LEXER_DEBUG(ws::module::noticeln(
-                ws::module::tabs(3), "Found '", c, "'."
-            ))
+
+            WS_LOG(ws::module::tabs(2) + "Found '" + c + "'.")
 
 
             if (is_end())
@@ -30,21 +27,14 @@ namespace ws::lexer {
 
 
             // If the next char is not valid, break and return builder.
-            if (not pred(at(ptr + 1))) {
-                WS_LEXER_DEBUG(ws::module::noticeln(
-                    ws::module::tabs(2), "Finished."
-                ))
-
+            if (not pred(at(ptr + 1)))
                 break;
-            }
 
 
             next();
         }
 
-        WS_LEXER_DEBUG(ws::module::noticeln(
-            ws::module::tabs(2), "Return '", builder, "'."
-        ))
+        WS_LOG(ws::module::tabs(1) + "Return '" + builder + "'.");
 
         return builder;
     }

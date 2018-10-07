@@ -18,8 +18,9 @@ namespace ws::lexer {
         char next() { return str.at(ptr++); }
         char prev() { return str.at(ptr--); }
 
-        char current() const { return str.at(ptr);   }
-        auto at(int i) const { return str.at(i); }
+        char current()   const { return str.at(ptr);     }
+        auto at(int i)   const { return str.at(i);       }
+        auto peek(int i) const { return str.at(ptr + i); }
 
         void reset()    { ptr = 0; }
         void set(int i) { ptr = i; }
