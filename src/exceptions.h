@@ -7,6 +7,7 @@
 namespace ws::lexer {
     class LexicalFailure: public std::runtime_error {
         public:
-            LexicalFailure(const std::string& msg): std::runtime_error(msg) {}
+            std::string msg;
+            LexicalFailure(const std::string& msg_): std::runtime_error(msg_), msg(msg_) {}
     };
 }
