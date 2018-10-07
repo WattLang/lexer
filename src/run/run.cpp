@@ -72,7 +72,6 @@ namespace ws::lexer {
                 break;
 
 
-            // Advance to the next character.
             code.next();
         }
 

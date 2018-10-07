@@ -177,14 +177,14 @@ int main(int, char const *[]) {
 
 
     // Identifiers.
-    ws::lexer::insert_case(match, "abcdefghijklmnopqrstuvwxyz",
+    ws::lexer::insert_case(match, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_",
         [&] (lex::Code& code, const std::string&) {
             WS_LEXER_DEBUG(ws::module::noticeln(
                 ws::module::tabs(1), ws::module::style::bold, "Identifier handler."
             ))
 
             auto current_column = globals::pos.column;
-            std::string valid_chars = "abcdefghijklmnopqrstuvwxyz_0123456789";
+            std::string valid_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789";
 
             auto builder = code.read_while([&] (char c) {
                 globals::pos.column++;
