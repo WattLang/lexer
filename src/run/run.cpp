@@ -17,12 +17,6 @@ namespace ws::lexer {
         TokenContainer tokens;
 
 
-        WS_LEXER_DEBUG(
-            ws::module::noticeln("Commence lexing.");
-            ws::module::printer << std::endl
-        )
-
-
         while (true and code.size() > 0) {
             char c = code.current();
 
@@ -74,9 +68,6 @@ namespace ws::lexer {
 
             code.next();
         }
-
-
-        WS_LEXER_DEBUG(ws::module::noticeln("Finished lexing."))
 
 
         return tokens;

@@ -3,6 +3,8 @@
 
 #include "src/macros.h"
 #include "src/aliases/aliases.h"
+#include "src/token/token.h"
+#include "src/position/position.h"
 #include "src/exceptions.h"
 #include "src/code/code.h"
 #include "src/run/run.h"
