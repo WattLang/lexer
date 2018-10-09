@@ -2,7 +2,7 @@
 
 
 #include <string>
-#include "types.h"
+#include <aliases/aliases.h>
 
 
 namespace ws::lexer {
@@ -11,8 +11,5 @@ namespace ws::lexer {
         ws::lexer::Matcher& matcher,
         const std::string& chars,
         const ws::lexer::Handler& handler
-    ) {
-        for (const auto& c: chars)
-            matcher[c] = {chars, handler};
-    }
+    );
 }
