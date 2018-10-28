@@ -1,7 +1,5 @@
 #!/usr/bin/env ws
 
-using xrandr, bspc, grep;
-
 
 config change_focus_to;
 

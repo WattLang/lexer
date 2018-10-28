@@ -1,20 +1,23 @@
 #include <iostream>
 #include <unordered_set>
-#include <chrono>
 #include <string>
-#include <unordered_map>
+#include <chrono>
 
-
-// Lexer stuff.
-#include <macros.h>
-#include <aliases/aliases.h>
-#include <token/token.h>
-#include <position/position.h>
-#include <exceptions.h>
-#include <code/code.h>
-#include <run/run.h>
-#include <utils/utils.h>
 #include <libs/module.h>
+
+#include <constant.h>
+
+#include <serializer/serializer.h>
+#include <stringiter/stringiter.h>
+#include <handlergroup/handlergroup.h>
+#include <exception.h>
+
+#include <lexer/lexer.h>
+
+
+
+
+
 
 
 
@@ -26,378 +29,318 @@ namespace lex = ws::lexer;
 
 
 
-namespace globals {
-    lex::Position pos;
-}
 
 
 
 
 
 
-int main(int, char const *[]) {
-    auto start = std::chrono::steady_clock::now();
-
-
-    lex::Matcher match;  // Defines handler callbacks for characters.
 
 
 
-    // Comments.
-    ws::lexer::insert_case(match, "#",
-        [&] (lex::Code& code, const std::string&) {
-            WS_LOG_HEADING("Comment handler.")
-
-            auto builder = code.read_while([&] (char c) {
-                globals::pos.column++;
-                return (c != '\n');
-            });
-
-            return lex::Token{};
-        }
-    );
 
 
-    // Strings.
-    ws::lexer::insert_case(match, "\"",
-        [&] (lex::Code& code, const std::string&) {
-            WS_LOG_HEADING("String handler.")
 
-            auto current_column = globals::pos.column;
+enum: ws::token::type_t {
+    TYPE_NULL,
+    TYPE_IDENTIFIER,
+    TYPE_STRING,
+    TYPE_SEPERATOR,
+    TYPE_COMMENT,
 
-            code.next(); globals::pos.column++; // Skip opening quote.
+    TYPE_OPERATOR,
 
-            auto builder = code.read_while([&] (char c) {
-                globals::pos.column++;
+    TYPE_OPERATOR_PLUS_EQ,
+    TYPE_OPERATOR_PLUS,
 
-                // Remember, c is always ptr + 1.
-                return (not (c == '"' and code.current() != '\\'));
-            });
+    TYPE_OPERATOR_MINUS_EQ,
+    TYPE_OPERATOR_MINUS,
 
-            code.next(); globals::pos.column++; // Skip ending quote.
+    TYPE_OPERATOR_DIV_EQ,
+    TYPE_OPERATOR_DIV,
 
-            return lex::Token{
-                {globals::pos.line, current_column},
-                {"literal", "string"},
-                builder
-            };
-        }
-    );
+    TYPE_OPERATOR_MUL_EQ,
+    TYPE_OPERATOR_MUL,
 
+    TYPE_OPERATOR_ASSIGN,
+    TYPE_OPERATOR_COMPARE,
 
-    // Digits.
-    ws::lexer::insert_case(match, "0123456789",
-        [&] (lex::Code& code, const std::string&) {
-            WS_LOG_HEADING("Digit handler.")
+    TYPE_OPERATOR_PIPE,
 
-            auto current_column = globals::pos.column;
-            const std::string valid_chars = "0123456789.";
+    TYPE_PAREN_LEFT,
+    TYPE_PAREN_RIGHT,
 
-            auto builder = code.read_while([&] (char c) {
-                globals::pos.column++;
-                return (valid_chars.find(c) != std::string::npos);
-            });
+    TYPE_BRACKET_LEFT,
+    TYPE_BRACKET_RIGHT,
 
-            return lex::Token{
-                {globals::pos.line, current_column},
-                {"literal", "number"},
-                builder
-            };
-        }
-    );
+    TYPE_BRACE_LEFT,
+    TYPE_BRACE_RIGHT,
+
+    TYPE_LITERAL_FLOAT,
+};
 
 
-    // Whitespace.
-    ws::lexer::insert_case(match, "\n\t ",
-        [&] (lex::Code& code, const std::string&) {
-            auto chr = code.current();
 
-            if (chr == '\n') {
-                globals::pos.line++;
-                globals::pos.column = 1;
 
-            } else {
-                globals::pos.column++;
+
+
+
+
+
+
+
+// Handlers.
+void ident_handler(lex::StringIter& iter, lex::Serializer& out) {
+    static const std::unordered_set<char> valid_chars = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '_', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
+    };
+
+
+    const auto builder = iter.read_while([] (lex::StringIter&, char c) {
+        return (valid_chars.find(c) != valid_chars.end());
+    });
+
+
+    out.print({TYPE_IDENTIFIER, 0, 0, builder});
+};
+
+
+
+void number_handler(lex::StringIter& iter, lex::Serializer& out) {
+    static const std::string valid_chars = "0123456789";
+
+    const auto builder = iter.read_while([] (lex::StringIter&, char c) {
+        return (valid_chars.find(c) != std::string::npos);
+    });
+
+
+    out.print({TYPE_LITERAL_FLOAT, 0, 0, builder});
+};
+
+
+
+void string_handler(lex::StringIter& iter, lex::Serializer& out) {
+    if (iter.match('"')) {
+        out.print({TYPE_STRING, 0, 0, ""});
+        iter.incr();
+        return;
+    }
+
+    iter.incr();
+
+
+    const auto builder = iter.read_while([] (lex::StringIter& iter, char c) {
+        return not (c == '"' and iter.peek() != '\\');
+    });
+
+
+    iter.incr();
+    out.print({TYPE_STRING, 0, 0, builder});
+};
+
+
+
+
+void op_handler(lex::StringIter& iter, lex::Serializer& out) {
+    switch (iter.peek()) {
+
+        case '+':
+            iter.match('=') ?
+                out.print({TYPE_OPERATOR_PLUS_EQ, 0, 0, "+="}) :
+                out.print({TYPE_OPERATOR_PLUS, 0, 0, "+"});
+
+            break;
+
+
+        case '-':
+            iter.match('=') ?
+                out.print({TYPE_OPERATOR_MINUS_EQ, 0, 0, "-="}) :
+                out.print({TYPE_OPERATOR_MINUS, 0, 0, "-"});
+
+            break;
+
+
+        case '*':
+            iter.match('=') ?
+                out.print({TYPE_OPERATOR_MUL_EQ, 0, 0, "*="}) :
+                out.print({TYPE_OPERATOR_MUL, 0, 0, "*"});
+
+            break;
+
+
+        case '|':
+            if (iter.match('>')) {
+                out.print({TYPE_OPERATOR_PIPE, 0, 0, "|>"});
             }
 
-            return lex::Token{};
-        }
+            break;
+
+
+        case '/':
+            if (iter.match('/'))
+                iter.next_while([] (lex::StringIter&, char c) {
+                    return (c != '\n');
+                });
+
+            else if (iter.match('='))
+                out.print({TYPE_OPERATOR_DIV_EQ, 0, 0, "/="});
+
+            else
+                out.print({TYPE_OPERATOR_DIV, 0, 0, "/"});
+
+            break;
+
+
+        case '=':
+            iter.match('=') ?
+                out.print({TYPE_OPERATOR_COMPARE, 0, 0, "=="}) :
+                out.print({TYPE_OPERATOR_ASSIGN, 0, 0, "="});
+
+            break;
+
+
+
+        default:
+            throw lex::exception::LexicalError("unknown operator '" + std::string{iter.peek()} + "'.");
+    }
+
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+int main(int, char const* []) {
+    const auto start = std::chrono::steady_clock::now();
+
+
+
+
+    lex::StringIter iter(
+        ws::module::receive_all(lex::constant::INPUT_BUFFER_SIZE)
     );
 
+    lex::Serializer out;
 
-    // Operators.
-    ws::lexer::insert_case(match, "|<>+-*/=",
-        [&] (lex::Code& code, const std::string& chars) {
-            WS_LOG_HEADING("Operator handler.")
 
-            auto current_column = globals::pos.column;
 
-            auto builder = code.read_while([&] (char c) {
-                globals::pos.column++;
-                return (chars.find(c) != std::string::npos);
-            });
 
-            static const std::unordered_map<std::string, std::string> operators = {
-                {"+",  "plus"},
-                {"-",  "minus"},
-                {"*",  "multiply"},
-                {"/",  "divide"},
 
-                {"+=",  "plus_mutate"},
-                {"-=",  "minus_mutate"},
-                {"*=",  "multiply_mutate"},
-                {"/=",  "divide_mutate"},
+    constexpr lex::HandlerGroup handlers = {
+        {
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_",
+            ident_handler
+        },
 
-                {"<",  "less"},
-                {">",  "greater"},
 
-                {"<=", "less_or_equal"},
-                {">=", "greater_or_equal"},
-                {"==", "compare"},
+        {"\n\t\r ", [](lex::StringIter&, lex::Serializer&){  }},
+        {"0123456789", number_handler},
+        {"|+-*/=", op_handler},
 
-                {"=",  "assign"},
 
-                {"|>", "pipe"}
-            };
-
-            if (operators.find(builder) == operators.end()) {
-                throw lex::LexicalError(
-                    "ill-formed operator '" + builder + "' in program."
-                );
+        {
+            "{",
+            [](lex::StringIter&, lex::Serializer& out){
+                out.print({TYPE_BRACE_LEFT, 0, 0, "{"});
             }
+        },
 
 
-            return lex::Token{
-                {globals::pos.line, current_column},
-                {"operator", operators.at(builder)},
-                builder
-            };
-        }
-    );
+        {
+            "}",
+            [](lex::StringIter&, lex::Serializer& out){
+                out.print({TYPE_BRACE_RIGHT, 0, 0, "}"});
+            }
+        },
 
 
-
-    // Block.
-    ws::lexer::insert_case(match, "({[",
-        [&] (lex::Code& code, const std::string&) {
-            WS_LOG_HEADING("Block handler.")
-
-            auto current_column = globals::pos.column;
-            auto chr = code.current();
-
-            static const std::unordered_map<char, std::string> type = {
-                {'(', "parenthesis"},
-                {'{', "brace"},
-                {'[', "bracket"}
-            };
-
-            globals::pos.column++;
-
-            return lex::Token{
-                {globals::pos.line, current_column},
-                {type.at(chr), "left"},
-                chr
-            };
-        }
-    );
-
-    ws::lexer::insert_case(match, ")}]",
-        [&] (lex::Code& code, const std::string&) {
-            WS_LOG_HEADING("Block handler.")
-
-            auto current_column = globals::pos.column;
-            auto chr = code.current();
-
-            static const std::unordered_map<char, std::string> type = {
-                {')', "parenthesis"},
-                {'}', "brace"},
-                {']', "bracket"}
-            };
-
-            globals::pos.column++;
-
-            return lex::Token{
-                {globals::pos.line, current_column},
-                {type.at(chr), "right"},
-                chr
-            };
-        }
-    );
+        {
+            "[",
+            [](lex::StringIter&, lex::Serializer& out){
+                out.print({TYPE_BRACKET_LEFT, 0, 0, "["});
+            }
+        },
 
 
+        {
+            "]",
+            [](lex::StringIter&, lex::Serializer& out){
+                out.print({TYPE_BRACKET_RIGHT, 0, 0, "]"});
+            }
+        },
 
 
-    // Identifiers.
-    ws::lexer::insert_case(match, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_",
-        [&] (lex::Code& code, const std::string&) {
-            WS_LOG_HEADING("Idenifier handler.")
+        {
+            "(",
+            [](lex::StringIter&, lex::Serializer& out){
+                out.print({TYPE_PAREN_LEFT, 0, 0, "("});
+            }
+        },
 
 
-            auto current_column = globals::pos.column;
-            const std::string valid_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789";
+        {
+            ")",
+            [](lex::StringIter&, lex::Serializer& out){
+                out.print({TYPE_PAREN_RIGHT, 0, 0, ")"});
+            }
+        },
 
-            auto builder = code.read_while([&] (char c) {
-                globals::pos.column++;
-                return (valid_chars.find(c) != std::string::npos);
-            });
 
-            static const std::unordered_set<std::string> reserved_idents = {
-                "if", "else",
-                "while", "for", "loop",
-                "struct",
-                "true", "false",
-                "namespace",
-                "let",
-                "int", "float", "byte", "str"
-            };
+        {
+            ",:;",
+            [](lex::StringIter& iter, lex::Serializer& out){
+                out.print({TYPE_SEPERATOR, 0, 0, std::string{iter.peek()}});
+            }
+        },
 
-            if (reserved_idents.find(builder) == reserved_idents.end()) {
-                return lex::Token{
-                    {globals::pos.line, current_column},
-                    {"identifier"},
-                    builder
-                };
 
-            } else {
-                return lex::Token{
-                    {globals::pos.line, current_column},
-                    {"keyword", builder},
-                    builder
-                };
+        {"\"", string_handler},
+
+        {"#", [](lex::StringIter& iter, lex::Serializer&){
+                iter.next_while([] (lex::StringIter&, char c) {
+                    return (c != '\n');
+                });
+
+
             }
         }
-    );
-
-
-
-
-    // Seperators
-    ws::lexer::insert_case(match, ":;,.",
-        [&] (lex::Code& code, const std::string&) {
-            WS_LOG_HEADING("Seperator handler.")
-
-            auto current_column = globals::pos.column;
-            auto chr = code.current();
-
-            static const std::unordered_map<char, std::string> type = {
-                {':', "semicolon"},
-                {';', "colon"},
-                {',', "comma"},
-                {'.', "dot"}
-            };
-
-            globals::pos.column++;
-
-            return lex::Token{
-                {globals::pos.line, current_column},
-                {"seperator", type.at(chr)},
-                chr
-            };
-        }
-    );
-
-
-
-
-
-
-    // Input stream.
-    auto contents = ws::module::receive_all(lex::BUFFER_SIZE);
-    lex::Code code(contents);  // The input code.
-    lex::TokenContainer tokens;
-
-
-
-
-    auto position_string = [&] () {
-        return std::string{
-            " on line " +
-            std::to_string(globals::pos.line) +
-            ", column " +
-            std::to_string(globals::pos.column) +
-            ": "
-        };
     };
 
 
 
-    try {
-        // Run the lexer on the code and pass in an error handler too.
-        tokens = lex::run(code, match);
 
-    } catch (const lex::LexicalNotice& e) {
-        ws::module::errorln(
-            "lexical notice occured", position_string(),
-            ws::module::lines(1), ws::module::tabs(1),
-            e.get_msg()
-        );
-
-        return 1;
-
-    } catch (const lex::LexicalWarn& e) {
-        ws::module::errorln(
-            "lexical warn occured", position_string(),
-            ws::module::lines(1), ws::module::tabs(1),
-            e.get_msg()
-        );
-
-        return 2;
-
-    } catch (const lex::LexicalError& e) {
-        ws::module::errorln(
-            "lexical error occured", position_string(),
-            ws::module::lines(1), ws::module::tabs(1),
-            e.get_msg()
-        );
-
-        return 3;
-
-    } catch (const lex::LexicalInternalError& e) {
-        ws::module::errorln(
-            "internal error occured", position_string(),
-            ws::module::lines(1), ws::module::tabs(1),
-            e.get_msg()
-        );
-
-        return 4;
-    }
+    int ret = lex::lexer(iter, out, handlers);
 
 
 
 
 
+    const auto end = std::chrono::steady_clock::now();
+    const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
+    ws::module::successln(ws::module::style::bold, "Finished in ", duration, "ms!");
 
 
-
-
-    auto end = std::chrono::steady_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-
-
-
-    // Pipe the tokens inside the container.
-    ws::module::pipe(tokens);
-
-
-    WS_LEXER_DEBUG(ws::module::printer << ws::module::lines(ws::lexer::HEADING_LINE_GAP))
-    ws::module::successln(ws::module::style::bold, "Finished!");
-
-
-
-    // Stats.
-    ws::module::printer << ws::module::lines(ws::lexer::HEADING_LINE_GAP);
-    ws::module::successln(ws::module::style::bold, "Statistics");
-
-
-
-    ws::module::successln(
-        ws::module::tabs(1), "Tokens   ", tokens.size()
-    );
-
-    ws::module::successln(
-        ws::module::tabs(1), "Duration ", duration, "ms"
-    );
-
-
-    return 0;
+    return ret;
 }

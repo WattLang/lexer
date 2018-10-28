@@ -35,3 +35,4 @@
 build/
 testing/
 .tup/
+data/big.ws

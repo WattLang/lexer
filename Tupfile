@@ -1,8 +1,9 @@
 CC=clang++
-WFLAGS=-Wall -Wextra
+WFLAGS=-Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-declarations -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-overflow=5 -Wswitch-default -Wundef -Wno-unused
 CFLAGS=--std=c++17 -Ofast -march=native -funroll-loops -m64
 LFLAGS=-flto
 INCLUDE=-I src/ -I modules/
+LIBS=-pthread
 BUILD_DIR=build
 TARGET=lexer
 
@@ -10,16 +11,12 @@ TARGET=lexer
 : foreach                                  \
                                            \
     main.cpp                               \
-    src/aliases/*.cpp                      \
-    src/code/*.cpp                         \
-    src/position/*.cpp                     \
-    src/run/*.cpp                          \
-    src/token/*.cpp                        \
-    src/type/*.cpp                         \
-    src/utils/*.cpp                        \
+    src/lexer/*.cpp                        \
+    src/stringiter/*.cpp                   \
+    src/serializer/*.cpp                   \
                                            \
 |> $(CC) $(WFLAGS) $(CFLAGS) $(INCLUDE) -c %f -o %o  \
 |> $(BUILD_DIR)/%B.o
 
 
-: $(BUILD_DIR)/*.o |> $(CC) $(WFLAGS) $(LFLAGS) %f -o %o |> $(BUILD_DIR)/$(TARGET)
+: $(BUILD_DIR)/*.o |> $(CC) $(WFLAGS) $(LIBS) $(LFLAGS) %f -o %o |> $(BUILD_DIR)/$(TARGET)
