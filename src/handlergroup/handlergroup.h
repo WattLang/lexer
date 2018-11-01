@@ -17,9 +17,12 @@ namespace ws::lexer {
         ) noexcept :
             entries{{nullptr}}
         {
-            for (const auto& x: entries_) {
-                insert(x.first, x.second);
-            }
+			// This should be just:
+			// for (const auto& x: entries_)
+			// but it doesn't work in MSVC (constexpr bug with lifetime of variables)
+			for (auto it = entries_.begin(); it != entries_.end(); ++it) {
+				insert(it->first, it->second);
+			}
         }
 
 

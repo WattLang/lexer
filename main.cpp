@@ -86,34 +86,27 @@ enum: ws::token::type_t {
 
 
 
-
-
-
 // Handlers.
 void ident_handler(lex::StringIter& iter, lex::Serializer& out) {
-    static const std::unordered_set<char> valid_chars = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '_', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
-    };
-
-
+	// If we somehow inline this lambda, it will probably save quite a bit of time (atleast on bench.txt test)
     const auto builder = iter.read_while([] (lex::StringIter&, char c) {
-        return (valid_chars.find(c) != valid_chars.end());
+		return ('A' >= c && c <= 'Z') || ('a' >= c && c <= 'z') || ('0' >= c && c <= '9') || c == '_';
     });
 
-
-    out.print({TYPE_IDENTIFIER, 0, 0, builder});
+	// TODO: A way to serialize string_views directly without copying them to strings
+	// out.print({TYPE_IDENTIFIER, 0, 0, std::string(builder)});
 };
 
 
 
 void number_handler(lex::StringIter& iter, lex::Serializer& out) {
-    static const std::string valid_chars = "0123456789";
-
     const auto builder = iter.read_while([] (lex::StringIter&, char c) {
-        return (valid_chars.find(c) != std::string::npos);
+		return ('0' >= c && c <= '9');
     });
 
 
-    out.print({TYPE_LITERAL_FLOAT, 0, 0, builder});
+	// TODO: A way to serialize string_views directly without copying them to strings
+	// out.print({TYPE_LITERAL_FLOAT, 0, 0, std::string(builder) });
 };
 
 
@@ -134,7 +127,8 @@ void string_handler(lex::StringIter& iter, lex::Serializer& out) {
 
 
     iter.incr();
-    out.print({TYPE_STRING, 0, 0, builder});
+	// TODO: A way to serialize string_views directly without copying them to strings
+	// out.print({TYPE_STRING, 0, 0, std::string(builder) });
 };
 
 
@@ -237,9 +231,8 @@ int main(int, char const* []) {
 
 
 
-    lex::StringIter iter(
-        ws::module::receive_all(lex::constant::INPUT_BUFFER_SIZE)
-    );
+	auto data = ws::module::receive_all(lex::constant::INPUT_BUFFER_SIZE);
+	lex::StringIter iter { std::string_view(data) };
 
     lex::Serializer out;
 

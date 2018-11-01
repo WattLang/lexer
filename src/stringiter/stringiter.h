@@ -7,35 +7,26 @@
 
 namespace ws::lexer {
     struct StringIter {
-        std::string buffer;
-        std::string::size_type current = 0;
+        std::string_view buffer;
+		const char *current = 0;
+
+        StringIter(const std::string_view& buffer_): buffer(buffer_), current(buffer.data()) {}
 
 
-        StringIter(const std::string& buffer_): buffer(buffer_) {}
 
+		// Iterate.
+		char next() { return *current++; }
+		char prev() { return *current--; }
 
+		char next(const unsigned i) {
+			current += i;
+			return *(current - i);
+		}
 
-        // Iterate.
-        char next() {
-            current++;
-            return buffer.at(current - 1);
-        }
-
-        char prev() {
-            current--;
-            return buffer.at(current + 1);
-        }
-
-        char next(const unsigned i) {
-            current += i;
-            return buffer.at(current - i);
-        }
-
-        char prev(const unsigned i) {
-            current -= i;
-            return buffer.at(current - i);
-        }
-
+		char prev(const unsigned i) {
+			current -= i;
+			return *(current + i);
+		}
 
 
         void incr() noexcept { current++; }
@@ -53,9 +44,9 @@ namespace ws::lexer {
 
 
         // View characters.
-        char at(const unsigned i)   const { return buffer.at(i);           }
-        char peek(const unsigned i) const { return buffer.at(current + i); }
-        char peek()             const { return buffer.at(current);     }
+        char at(const unsigned i)   const { return buffer.at(i);    }
+        char peek(const unsigned i) const { return *(current + i);	}
+        char peek()             const { return *current;			}
 
 
 
@@ -66,7 +57,7 @@ namespace ws::lexer {
         std::string::size_type size() const noexcept { return buffer.size(); }
 
         bool is_end() const noexcept {
-            return (current == size());
+            return current >= (buffer.data() + size());
         }
 
 
@@ -77,8 +68,8 @@ namespace ws::lexer {
 
 
         // Read N characters.
-        const std::string read(const std::string::size_type& n) const {
-            return buffer.substr(current + 1, n);
+        const std::string_view read(const std::string::size_type& n) const {
+            return buffer.substr(current - buffer.data() + 1, n);
         }
 
 
@@ -91,6 +82,6 @@ namespace ws::lexer {
         void next_while(const alias::WhilePred& pred);
 
 
-        const std::string read_while(const alias::WhilePred& pred);
+        const std::string_view read_while(const alias::WhilePred& pred);
     };
 }

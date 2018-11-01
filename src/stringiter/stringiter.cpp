@@ -24,7 +24,7 @@ namespace ws::lexer {
             // The size is offset because the predicate must look forward by size + 1 in the case of the final character which would lead to an exception.
 
             // (Expression order is important here.)
-            if (current >= (size() - 1) or not pred(*this, peek(1)))
+            if (current >= (buffer.data() + size() - 1) or not pred(*this, peek(1)))
                 break;
 
             incr();
@@ -32,33 +32,23 @@ namespace ws::lexer {
     }
 
 
-    const std::string StringIter::read_while(const alias::WhilePred& pred) {
-        static std::string builder(constant::STRING_BUFFER_SIZE_INITIAL, '\0');
-        builder.clear();
-        std::string::size_type ptr = 0;
-
+    const std::string_view StringIter::read_while(const alias::WhilePred& pred) {
+		const char *begin = current;
+		size_t length = 0;
 
         while (true) {
-            if (ptr % constant::STRING_BUFFER_SIZE == 0) {
-                builder.resize(builder.size() + constant::STRING_BUFFER_SIZE);
-            }
-
-            //builder += peek();
-            builder[ptr] = peek();
-            // If the next char is not valid, break and return builder.
-
-            // The size is offset because the predicate must look forward by size + 1 in the case of the final character which would lead to an exception.
-
+			// If the next char is not valid, break and return result.
+            
+			// The size is offset because the predicate must look forward by size + 1 in the case of the final character which would lead to an exception.
             // (Expression order is important here.)
-            if (current >= (size() - 1) or not pred(*this, peek(1)))
+            if (current >= (buffer.data() + size() - 1) or not pred(*this, peek(1)))
                 break;
 
             incr();
-            ++ptr;
-        }
+			length++;
+		}
 
-
-        return builder;
+		return std::string_view(begin, length);
     }
 
 }
