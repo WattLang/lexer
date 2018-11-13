@@ -35,14 +35,5 @@
 build/
 testing/
 .tup/
-data/big.ws
-
-# Visual Studio
-*.sln
-*.vcxproj
-*.vcxproj.filters
-*.vcxproj.user
-.vs/
-bin/
-bin-int/
-/data/bench_140k.txt
+callgrind.out.*
+cachegrind.out.*

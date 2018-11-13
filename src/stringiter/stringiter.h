@@ -2,38 +2,46 @@
 
 
 #include <string>
+#include <string_view>
 #include <alias.h>
+#include <libs/module.h>
 
 
 namespace ws::lexer {
     struct StringIter {
         std::string_view buffer;
-		const char *current = 0;
-
-        StringIter(const std::string_view& buffer_): buffer(buffer_), current(buffer.data()) {}
+        const char *current = nullptr;
 
 
+        StringIter(std::string_view buffer_):
+            buffer(buffer_),
+            current(buffer.data())
+        {}
 
-		// Iterate.
-		char next() { return *current++; }
-		char prev() { return *current--; }
 
-		char next(const unsigned i) {
-			current += i;
-			return *(current - i);
-		}
 
-		char prev(const unsigned i) {
-			current -= i;
-			return *(current + i);
-		}
+
+        // Iterate.
+        char next() { return *current++; }
+        //char prev() { return *current--; }
+
+        char next(const unsigned i) {
+            current += i;
+            return *(current - i);
+        }
+
+        /*char prev(const unsigned i) {
+            current -= i;
+            return *(current + i);
+        }*/
+
 
 
         void incr() noexcept { current++; }
-        void decr() noexcept { current--; }
+        //void decr() noexcept { current--; }
 
         void incr(const unsigned i) noexcept { current += i; }
-        void decr(const unsigned i) noexcept { current -= i; }
+        //void decr(const unsigned i) noexcept { current -= i; }
 
 
 
@@ -44,9 +52,9 @@ namespace ws::lexer {
 
 
         // View characters.
-        char at(const unsigned i)   const { return buffer.at(i);    }
-        char peek(const unsigned i) const { return *(current + i);	}
-        char peek()             const { return *current;			}
+        //char at(const unsigned i)   const { return buffer.at(i);  }
+        char peek(const unsigned i) const { return *(current + i); }
+        char peek()                 const { return *(current);     }
 
 
 
@@ -56,8 +64,8 @@ namespace ws::lexer {
         // Info.
         std::string::size_type size() const noexcept { return buffer.size(); }
 
-        bool is_end() const noexcept {
-            return current >= (buffer.data() + size());
+        bool is_end(int offset = 0) const noexcept {
+            return current >= ((buffer.data() + size()) + offset);
         }
 
 
@@ -68,9 +76,9 @@ namespace ws::lexer {
 
 
         // Read N characters.
-        const std::string_view read(const std::string::size_type& n) const {
-            return buffer.substr(current - buffer.data() + 1, n);
-        }
+        /*const std::string read(const std::string::size_type& n) const {
+            return buffer.substr(static_cast<unsigned long>(current - buffer.data() + 1), n);
+        }*/
 
 
 
@@ -79,9 +87,8 @@ namespace ws::lexer {
 
 
         // Skip over characters until a certain condition is met.
-        void next_while(const alias::WhilePred& pred);
+        void next_while(alias::WhilePred pred);
 
-
-        const std::string_view read_while(const alias::WhilePred& pred);
+        const std::string read_while(alias::WhilePred pred);
     };
 }

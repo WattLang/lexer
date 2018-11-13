@@ -13,7 +13,6 @@ TARGET=lexer
     main.cpp                               \
     src/lexer/*.cpp                        \
     src/stringiter/*.cpp                   \
-    src/serializer/*.cpp                   \
                                            \
 |> $(CC) $(WFLAGS) $(CFLAGS) $(INCLUDE) -c %f -o %o  \
 |> $(BUILD_DIR)/%B.o

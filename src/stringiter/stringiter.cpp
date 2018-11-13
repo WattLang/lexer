@@ -17,14 +17,14 @@ namespace ws::lexer {
 
 
     // Skip over characters until a certain condition is met.
-    void StringIter::next_while(const alias::WhilePred& pred) {
+    void StringIter::next_while(alias::WhilePred pred) {
         while (true) {
             // If the next char is not valid, break and return builder.
 
             // The size is offset because the predicate must look forward by size + 1 in the case of the final character which would lead to an exception.
 
             // (Expression order is important here.)
-            if (current >= (buffer.data() + size() - 1) or not pred(*this, peek(1)))
+            if (is_end(-1) or not pred(*this, peek(1)))
                 break;
 
             incr();
@@ -32,23 +32,26 @@ namespace ws::lexer {
     }
 
 
-    const std::string_view StringIter::read_while(const alias::WhilePred& pred) {
-		const char *begin = current;
-		size_t length = 0;
+    const std::string StringIter::read_while(alias::WhilePred pred) {
+        const char *begin = current;
+        std::size_t length = 1;
+
 
         while (true) {
-			// If the next char is not valid, break and return result.
-            
-			// The size is offset because the predicate must look forward by size + 1 in the case of the final character which would lead to an exception.
+            // If the next char is not valid, break and return builder.
+
+            // The size is offset because the predicate must look forward by size + 1 in the case of the final character which would lead to an exception.
+
             // (Expression order is important here.)
-            if (current >= (buffer.data() + size() - 1) or not pred(*this, peek(1)))
+            if (is_end(-1) or not pred(*this, peek(1)))
                 break;
 
-            incr();
-			length++;
-		}
 
-		return std::string_view(begin, length);
+            incr();
+            ++length;
+        }
+
+        return std::string(begin, length);
     }
 
 }

@@ -32,10 +32,14 @@
 
 
 namespace ws::lexer::exception {
-    WS_LEXER_NEW_EXCEPTION_TYPE(LexicalNotice, "Lexical notice!")
-    WS_LEXER_NEW_EXCEPTION_TYPE(LexicalWarn, "Lexical warning!")
-    WS_LEXER_NEW_EXCEPTION_TYPE(LexicalError, "Lexical error!")
-    WS_LEXER_NEW_EXCEPTION_TYPE(LexicalInternalError, "Lexical internal error!")
+    WS_LEXER_NEW_EXCEPTION_TYPE(Notice, "Lexical notice!")
+    WS_LEXER_NEW_EXCEPTION_TYPE(Warn, "Lexical warning!")
+    WS_LEXER_NEW_EXCEPTION_TYPE(Error, "Lexical error!")
+    WS_LEXER_NEW_EXCEPTION_TYPE(InternalError, "Lexical internal error!")
+
+
+    WS_LEXER_NEW_EXCEPTION_TYPE(NonFatal, "Recoverable error.")
+    WS_LEXER_NEW_EXCEPTION_TYPE(Fatal, "Unrecoverable error.")
 }
 
 

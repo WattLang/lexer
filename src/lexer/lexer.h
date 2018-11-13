@@ -1,15 +1,14 @@
 #pragma once
 
 
-#include <stringiter/stringiter.h>
-#include <serializer/serializer.h>
-#include <handlergroup/handlergroup.h>
+#include <string>
+
+#include <rules/rules.h>
+#include <alias.h>
 
 
 namespace ws::lexer {
-    int lexer(
-        StringIter& iter,
-        Serializer& out,
-        const HandlerGroup& handlers
-    );
+
+    alias::TokenGroup lexer(const Rules& rules, const std::string& input);
+
 }
