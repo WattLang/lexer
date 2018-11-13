@@ -158,6 +158,7 @@ namespace ws::lexer {
             ws::module::println_em("tokens", "   ", num_to_formatted_str(tokens.size()));
 
             ws::module::print_tabs(1);
+
             ws::module::println_em("diff", "     ", tokens.capacity() - tokens.size());
         });
 
