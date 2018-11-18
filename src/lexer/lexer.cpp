@@ -120,7 +120,7 @@ namespace ws::lexer {
             const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
 
-            ws::module::successln_h(num_to_formatted_str(tokens.size()), " tokens lexed in ", num_to_formatted_str(duration), "ms!");
+            ws::module::successln_h("lex time: ", duration, "ms!");
         });
 
 
@@ -133,20 +133,21 @@ namespace ws::lexer {
             ws::module::noticeln_h("statistics");
 
             ws::module::print_tabs(1);
-            ws::module::println_em("time", "     ", num_to_formatted_str(duration), "ms");
+            ws::module::println_em("string", "       ", num_to_formatted_str(input.size()));
 
             ws::module::print_tabs(1);
-            ws::module::println_em("string", "   ", num_to_formatted_str(input.size()));
+            ws::module::println_em("capacity", "     ", num_to_formatted_str(tokens.capacity()));
 
             ws::module::print_tabs(1);
-            ws::module::println_em("capacity", " ", num_to_formatted_str(tokens.capacity()));
+            ws::module::println_em("tokens", "       ", num_to_formatted_str(tokens.size()));
+
 
             ws::module::print_tabs(1);
-            ws::module::println_em("tokens", "   ", num_to_formatted_str(tokens.size()));
+            ws::module::println_em("diff", "         ", num_to_formatted_str(tokens.capacity() - tokens.size()));
+
 
             ws::module::print_tabs(1);
-
-            ws::module::println_em("diff", "     ", tokens.capacity() - tokens.size());
+            ws::module::println_em("lex time", "     ", num_to_formatted_str(duration), "ms");
         });
 
 

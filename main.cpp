@@ -1,7 +1,10 @@
 #include <iostream>
 #include <fstream>
+#include <chrono>
 #include <string>
 #include <cctype>
+#include <unordered_set>
+#include <set>
 
 #include <libs/module.h>
 #include <constant.h>
@@ -21,6 +24,9 @@ namespace lex = ws::lexer;
 
 
 int main(int, char const*[]) {
+    const auto start = std::chrono::high_resolution_clock::now();
+
+
     constexpr lex::Rules handlers = {
         {
             "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_",
@@ -70,6 +76,29 @@ int main(int, char const*[]) {
     ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
         for (const auto& tok: tokens)
             ws::module::println(tok);
+    });
+
+
+
+    const auto end = std::chrono::high_resolution_clock::now();
+
+    ws::module::run_if<
+        lex::constant::ENABLE_STATS && not lex::constant::ENABLE_VERBOSE
+    >([&] {
+        const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
+        ws::module::successln_h("tot time: ", duration, "ms!");
+    });
+
+
+
+    ws::module::run_if<
+        lex::constant::ENABLE_STATS && lex::constant::ENABLE_VERBOSE
+    >([&] {
+        const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
+        ws::module::print_tabs(1);
+        ws::module::println_em("total time", "   ", duration, "ms");
     });
 
 

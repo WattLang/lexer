@@ -11,15 +11,21 @@ using StringIter = lex::StringIter;
 enum: ws::token::Type {
     TYPE_NULL,
     TYPE_IDENTIFIER,
+    TYPE_KEYWORD,
     TYPE_STRING,
     TYPE_SEPERATOR,
     TYPE_COMMENT,
 
+    TYPE_FUNC_DEF,
+
     TYPE_OPERATOR,
 
     TYPE_OPERATOR_RAISE,
-
+    TYPE_OPERATOR_ARROW,
     TYPE_OPERATOR_QUOTE,
+
+    TYPE_OPERATOR_INCR,
+    TYPE_OPERATOR_DECR,
 
     TYPE_OPERATOR_PLUS_EQ,
     TYPE_OPERATOR_PLUS,
@@ -82,11 +88,22 @@ constexpr lex::LookupTable ident_table = {
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_", true
 };
 
+const std::unordered_set<std::string> keywords = {
+    "var", "struct", "self",
+    "if", "else", "for", "while",
+    "break", "continue", "return",
+    "nil", "true", "false"
+};
+
 void ident_handler(StringIter& iter, Group& tokens) {
     const auto builder = iter.read_while([] (auto&, char c) {
         return ident_table[c];
     });
 
+    if (keywords.find(std::string{builder}) != keywords.end()) {
+        tokens.emplace(TYPE_KEYWORD, builder);
+        return;
+    }
 
     tokens.emplace(TYPE_IDENTIFIER, builder);
 };
@@ -200,13 +217,37 @@ void op_handler(StringIter& iter, Group& tokens) {
 
         case '+':
             if (iter.match('=')) {
-                tokens.emplace(TYPE_OPERATOR_PLUS_EQ);
+                ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_PLUS_EQ, "+=");
+                });
+
+                ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_PLUS_EQ);
+                });
+
+                return;
+
+
+            } else if (iter.match('+')) {
+                ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_INCR, "++");
+                });
+
+                ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_INCR);
+                });
 
                 return;
 
 
             } else {
-                tokens.emplace(TYPE_OPERATOR_PLUS);
+                ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_PLUS, "+");
+                });
+
+                ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_PLUS);
+                });
 
                 return;
             }
@@ -215,13 +256,25 @@ void op_handler(StringIter& iter, Group& tokens) {
 
         case '<':
             if (iter.match('=')) {
-                tokens.emplace(TYPE_OPERATOR_LESS_EQ);
+                ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_LESS_EQ, "<=");
+                });
+
+                ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_LESS_EQ);
+                });
 
                 return;
 
 
             } else {
-                tokens.emplace(TYPE_OPERATOR_LESS);
+                ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_LESS, "<");
+                });
+
+                ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_LESS);
+                });
 
                 return;
             }
@@ -230,13 +283,25 @@ void op_handler(StringIter& iter, Group& tokens) {
 
         case '>':
             if (iter.match('=')) {
-                tokens.emplace(TYPE_OPERATOR_MORE_EQ);
+                ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_MORE_EQ, ">=");
+                });
+
+                ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_MORE_EQ);
+                });
 
                 return;
 
 
             } else {
-                tokens.emplace(TYPE_OPERATOR_MORE);
+                ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_MORE, ">");
+                });
+
+                ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_MORE);
+                });
 
                 return;
             }
@@ -245,13 +310,49 @@ void op_handler(StringIter& iter, Group& tokens) {
 
         case '-':
             if (iter.match('=')) {
-                tokens.emplace(TYPE_OPERATOR_MINUS_EQ);
+                ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_MINUS_EQ, "-=");
+                });
+
+                ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_MINUS_EQ);
+                });
+
+                return;
+
+
+            } else if (iter.match('-')) {
+                ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_DECR, "--");
+                });
+
+                ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_DECR);
+                });
+
+                return;
+
+
+            } else if (iter.match('>')) {
+                ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_ARROW, "->");
+                });
+
+                ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_ARROW);
+                });
 
                 return;
 
 
             } else {
-                tokens.emplace(TYPE_OPERATOR_MINUS);
+                ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_MINUS, "-");
+                });
+
+                ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_MINUS);
+                });
 
                 return;
             }
@@ -260,13 +361,25 @@ void op_handler(StringIter& iter, Group& tokens) {
 
         case '*':
             if (iter.match('=')) {
-                tokens.emplace(TYPE_OPERATOR_MUL_EQ);
+                ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_MUL_EQ, "*=");
+                });
+
+                ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_MUL_EQ);
+                });
 
                 return;
 
 
             } else {
-                tokens.emplace(TYPE_OPERATOR_MUL);
+                ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_MUL, "*");
+                });
+
+                ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_MUL);
+                });
 
                 return;
             }
@@ -274,14 +387,26 @@ void op_handler(StringIter& iter, Group& tokens) {
 
 
         case '\'':
-            tokens.emplace(TYPE_OPERATOR_QUOTE);
+            ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+                tokens.emplace(TYPE_OPERATOR_QUOTE, "'");
+            });
+
+            ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+                tokens.emplace(TYPE_OPERATOR_QUOTE);
+            });
 
             return;
 
 
 
         case '^':
-            tokens.emplace(TYPE_OPERATOR_RAISE);
+            ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+                tokens.emplace(TYPE_OPERATOR_RAISE, "^");
+            });
+
+            ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+                tokens.emplace(TYPE_OPERATOR_RAISE);
+            });
 
             return;
 
@@ -289,7 +414,13 @@ void op_handler(StringIter& iter, Group& tokens) {
 
         case '|':
             if (iter.match('>')) {
-                tokens.emplace(TYPE_OPERATOR_PIPE);
+                ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_PIPE, "|>");
+                });
+
+                ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_PIPE);
+                });
 
                 return;
             }
@@ -306,13 +437,25 @@ void op_handler(StringIter& iter, Group& tokens) {
 
 
             } else if (iter.match('=')) {
-                tokens.emplace(TYPE_OPERATOR_DIV_EQ);
+                ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_DIV_EQ, "/=");
+                });
+
+                ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_DIV_EQ);
+                });
 
                 return;
 
 
             } else {
-                tokens.emplace(TYPE_OPERATOR_DIV);
+                ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_DIV, "/");
+                });
+
+                ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_DIV);
+                });
 
                 return;
             }
@@ -321,13 +464,24 @@ void op_handler(StringIter& iter, Group& tokens) {
 
         case '=':
             if (iter.match('=')) {
-                tokens.emplace(TYPE_OPERATOR_COMPARE);
+                ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_COMPARE, "==");
+                });
+
+                ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_COMPARE);
+                });
 
                 return;
 
-
             } else {
-                tokens.emplace(TYPE_OPERATOR_ASSIGN);
+                ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_ASSIGN, "=");
+                });
+
+                ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_OPERATOR_ASSIGN);
+                });
 
                 return;
             }
@@ -372,12 +526,24 @@ void whitespace_handler(StringIter& iter, Group&) {
 
 
 void left_brace_handler(StringIter&, Group& tokens) {
-    tokens.emplace(TYPE_BRACE_LEFT);
+    ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+        tokens.emplace(TYPE_BRACE_LEFT, "{");
+    });
+
+    ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+        tokens.emplace(TYPE_BRACE_LEFT);
+    });
 }
 
 
 void right_brace_handler(StringIter&, Group& tokens) {
-    tokens.emplace(TYPE_BRACE_RIGHT);
+    ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+        tokens.emplace(TYPE_BRACE_RIGHT, "}");
+    });
+
+    ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+        tokens.emplace(TYPE_BRACE_RIGHT);
+    });
 }
 
 
@@ -386,11 +552,23 @@ void right_brace_handler(StringIter&, Group& tokens) {
 
 
 void left_bracket_handler(StringIter&, Group& tokens) {
-    tokens.emplace(TYPE_BRACKET_LEFT);
+    ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+        tokens.emplace(TYPE_BRACKET_LEFT, "[");
+    });
+
+    ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+        tokens.emplace(TYPE_BRACKET_LEFT);
+    });
 }
 
 void right_bracket_handler(StringIter&, Group& tokens) {
-    tokens.emplace(TYPE_BRACKET_RIGHT);
+    ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+        tokens.emplace(TYPE_BRACKET_RIGHT, "]");
+    });
+
+    ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+        tokens.emplace(TYPE_BRACKET_RIGHT);
+    });
 }
 
 
@@ -400,11 +578,23 @@ void right_bracket_handler(StringIter&, Group& tokens) {
 
 
 void left_paren_handler(StringIter&, Group& tokens) {
-    tokens.emplace(TYPE_PAREN_LEFT);
+    ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+        tokens.emplace(TYPE_PAREN_LEFT, "(");
+    });
+
+    ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+        tokens.emplace(TYPE_PAREN_LEFT);
+    });
 }
 
 void right_paren_handler(StringIter&, Group& tokens) {
-    tokens.emplace(TYPE_PAREN_RIGHT);
+    ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+        tokens.emplace(TYPE_PAREN_RIGHT, ")");
+    });
+
+    ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+        tokens.emplace(TYPE_PAREN_RIGHT);
+    });
 }
 
 
@@ -413,6 +603,21 @@ void right_paren_handler(StringIter&, Group& tokens) {
 
 
 void seperator_handler(StringIter& iter, Group& tokens) {
+    switch (iter.peek()) {
+        case ':':
+            if (iter.match(':')) {
+                ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_FUNC_DEF, "::");
+                });
+
+                ws::module::run_if<not lex::constant::PRINT_TOKENS>([&] {
+                    tokens.emplace(TYPE_FUNC_DEF);
+                });
+
+                return;
+            }
+    }
+
     tokens.emplace(TYPE_SEPERATOR, std::string_view{iter.ptr(), 1});
 }
 
