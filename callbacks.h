@@ -88,7 +88,7 @@ constexpr lex::LookupTable ident_table = {
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_", true
 };
 
-const std::unordered_set<std::string> keywords = {
+const std::unordered_set<std::string_view> keywords = {
     "var", "struct", "self",
     "if", "else", "for", "while",
     "break", "continue", "return",
@@ -100,7 +100,7 @@ void ident_handler(StringIter& iter, Group& tokens) {
         return ident_table[c];
     });
 
-    if (keywords.find(std::string{builder}) != keywords.end()) {
+    if (keywords.find(builder) != keywords.end()) {
         tokens.emplace(TYPE_KEYWORD, builder);
         return;
     }

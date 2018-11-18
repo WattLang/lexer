@@ -52,6 +52,9 @@ int main(int, char const*[]) {
     };
 
 
+
+    const auto start_recv = std::chrono::high_resolution_clock::now();
+
     auto data = ws::module::receive_all();
     lex::alias::Group tokens;
 
@@ -61,6 +64,8 @@ int main(int, char const*[]) {
 
         return 1;
     }
+
+    const auto end_recv = std::chrono::high_resolution_clock::now();
 
 
 
@@ -88,6 +93,11 @@ int main(int, char const*[]) {
         const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
         ws::module::successln_h("tot time: ", duration, "ms!");
+
+
+        const auto duration2 = std::chrono::duration_cast<std::chrono::milliseconds>(end_recv - start_recv).count();
+
+        ws::module::successln_h("rec time: ", duration2, "ms!");
     });
 
 
