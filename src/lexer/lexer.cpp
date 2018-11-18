@@ -30,40 +30,36 @@ std::string num_to_formatted_str(T val) {
 
 
 namespace ws::lexer {
-    alias::TokenGroup lexer(
+    alias::Group lexer(
         const Rules& rules,
         const std::string& input
     ) {
         const auto start = std::chrono::high_resolution_clock::now();
 
 
-        auto num_allocs = 1ul;
-        auto buffer_size = input.size() / 3;
-        // 3 here represents the ratio of the number of input characters to the number of output tokens. this seems to be a good value in my testing.
-
-
-        alias::TokenGroup tokens;
-        tokens.reserve(buffer_size);
-
-
         ws::lexer::StringIter iter(input);
+
+        alias::Group tokens(input, 3.3);
+        // 3.3 here represents the ratio of the number of input characters to the number of output tokens. this seems to be a good value in my testing.
+
+
 
 
         try {
             while (not iter.is_end()) {
-                const char c = iter.peek();
-                const auto& rule = rules.at(static_cast<unsigned long>(c));
 
-
-                if (not rule)
-                    throw exception::InternalError(
-                        "cannot find associated rule for '" + std::string{c} + "' character."
-                    );
-
-
-                // rule is valid.
+                // check if rule is valid.
                 try {
-                    rule(iter, tokens);
+                    if (const auto& rule = rules.at(iter.peek()); not rule) {
+                        throw exception::InternalError(
+                            "unexpected character '" + std::string{iter.ptr()} + "'."
+                        );
+
+
+                    } else {
+                        rule(iter, tokens);
+                        iter.incr();
+                    }
 
 
                 // Catch any non-fatal errors and just continue.
@@ -82,19 +78,7 @@ namespace ws::lexer {
                         e.get_msg()
                     );
                 }
-
-
-
-                /*if (tokens.size() % buffer_size == 0) {
-                    tokens.reserve((tokens.size() + buffer_size) / num_allocs);
-                    num_allocs++;
-                }*/
-
-
-
-                iter.incr();
             }
-
 
 
         // Fatal errors, cease lexing.
@@ -120,13 +104,19 @@ namespace ws::lexer {
 
 
 
+
+
+
+
+
+        // Statistics.
         const auto end = std::chrono::high_resolution_clock::now();
 
 
 
         ws::module::run_if<
             constant::ENABLE_STATS && not constant::ENABLE_VERBOSE
-        >([&] () {
+        >([&] {
             const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
 
@@ -136,7 +126,7 @@ namespace ws::lexer {
 
         ws::module::run_if<
             constant::ENABLE_STATS && constant::ENABLE_VERBOSE
-        >([&] () {
+        >([&] {
             const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
 
@@ -147,9 +137,6 @@ namespace ws::lexer {
 
             ws::module::print_tabs(1);
             ws::module::println_em("string", "   ", num_to_formatted_str(input.size()));
-
-            ws::module::print_tabs(1);
-            ws::module::println_em("allocs", "   ", num_to_formatted_str(num_allocs));
 
             ws::module::print_tabs(1);
             ws::module::println_em("capacity", " ", num_to_formatted_str(tokens.capacity()));
@@ -166,7 +153,7 @@ namespace ws::lexer {
 
 
 
-        //tokens.shrink_to_fit();
+        tokens.shrink_to_fit();
 
         return tokens;
     }

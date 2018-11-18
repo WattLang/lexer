@@ -2,8 +2,13 @@
 
 
 
+using Group = lex::alias::Group;
+using StringIter = lex::StringIter;
 
-enum: ws::token::type_t {
+
+
+
+enum: ws::token::Type {
     TYPE_NULL,
     TYPE_IDENTIFIER,
     TYPE_STRING,
@@ -48,7 +53,7 @@ enum: ws::token::type_t {
     TYPE_BRACE_LEFT,
     TYPE_BRACE_RIGHT,
 
-    TYPE_LITERAL_FLOAT,
+    TYPE_LITERAL_FLOAT
 };
 
 
@@ -70,14 +75,20 @@ enum: ws::token::type_t {
 
 
 
-// Handlers.
-void ident_handler(lex::StringIter& iter, lex::alias::TokenGroup& tokens) {
-    const auto builder = iter.read_while([] (lex::StringIter&, char c) {
-        auto ch = static_cast<unsigned char>(c);
-        return (std::isalpha(c) || std::isdigit(c) || c == '_');
+
+
+
+constexpr lex::LookupTable ident_table = {
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_", true
+};
+
+void ident_handler(StringIter& iter, Group& tokens) {
+    const auto builder = iter.read_while([] (auto&, char c) {
+        return ident_table[c];
     });
 
-    tokens.emplace_back(TYPE_IDENTIFIER, std::move(builder));
+
+    tokens.emplace(TYPE_IDENTIFIER, builder);
 };
 
 
@@ -98,15 +109,14 @@ void ident_handler(lex::StringIter& iter, lex::alias::TokenGroup& tokens) {
 
 
 
+constexpr lex::LookupTable num_table = {"0123456789", true};
 
-
-void number_handler(lex::StringIter& iter, lex::alias::TokenGroup& tokens) {
-    const auto builder = iter.read_while([] (lex::StringIter&, char c) {
-        auto ch = static_cast<unsigned char>(c);
-        return (static_cast<bool>(std::isdigit(c)));
+void number_handler(StringIter& iter, Group& tokens) {
+    const auto builder = iter.read_while([] (auto&, char c) {
+        return num_table[c];
     });
 
-    tokens.emplace_back(TYPE_LITERAL_FLOAT, std::move(builder));
+    tokens.emplace(TYPE_LITERAL_FLOAT, builder);
 };
 
 
@@ -138,9 +148,9 @@ void number_handler(lex::StringIter& iter, lex::alias::TokenGroup& tokens) {
 
 
 
-void string_handler(lex::StringIter& iter, lex::alias::TokenGroup& tokens) {
+void string_handler(StringIter& iter, Group& tokens) {
     if (iter.match('"')) {
-        tokens.emplace_back(TYPE_STRING);
+        tokens.emplace(TYPE_STRING);
         iter.incr();
         return;
     }
@@ -148,13 +158,13 @@ void string_handler(lex::StringIter& iter, lex::alias::TokenGroup& tokens) {
     iter.incr();
 
 
-    const auto builder = iter.read_while([] (lex::StringIter& iter, char c) {
+    const auto builder = iter.read_while([] (auto& iter, char c) {
         return not (c == '"' and iter.peek() != '\\');
     });
 
 
     iter.incr();
-    tokens.emplace_back(TYPE_STRING, std::move(builder));
+    tokens.emplace(TYPE_STRING, builder);
 };
 
 
@@ -185,94 +195,147 @@ void string_handler(lex::StringIter& iter, lex::alias::TokenGroup& tokens) {
 
 
 
-void op_handler(lex::StringIter& iter, lex::alias::TokenGroup& tokens) {
+void op_handler(StringIter& iter, Group& tokens) {
     switch (iter.peek()) {
 
         case '+':
-            iter.match('=') ?
-                tokens.emplace_back(TYPE_OPERATOR_PLUS_EQ) :
-                tokens.emplace_back(TYPE_OPERATOR_PLUS);
+            if (iter.match('=')) {
+                tokens.emplace(TYPE_OPERATOR_PLUS_EQ);
 
-            return;
+                return;
+
+
+            } else {
+                tokens.emplace(TYPE_OPERATOR_PLUS);
+
+                return;
+            }
+
 
 
         case '<':
-            iter.match('=') ?
-                tokens.emplace_back(TYPE_OPERATOR_LESS_EQ) :
-                tokens.emplace_back(TYPE_OPERATOR_LESS);
+            if (iter.match('=')) {
+                tokens.emplace(TYPE_OPERATOR_LESS_EQ);
 
-            return;
+                return;
+
+
+            } else {
+                tokens.emplace(TYPE_OPERATOR_LESS);
+
+                return;
+            }
+
 
 
         case '>':
-            iter.match('=') ?
-                tokens.emplace_back(TYPE_OPERATOR_MORE_EQ) :
-                tokens.emplace_back(TYPE_OPERATOR_MORE);
+            if (iter.match('=')) {
+                tokens.emplace(TYPE_OPERATOR_MORE_EQ);
 
-            return;
+                return;
+
+
+            } else {
+                tokens.emplace(TYPE_OPERATOR_MORE);
+
+                return;
+            }
+
 
 
         case '-':
-            iter.match('=') ?
-                tokens.emplace_back(TYPE_OPERATOR_MINUS_EQ) :
-                tokens.emplace_back(TYPE_OPERATOR_MINUS);
+            if (iter.match('=')) {
+                tokens.emplace(TYPE_OPERATOR_MINUS_EQ);
 
-            return;
+                return;
+
+
+            } else {
+                tokens.emplace(TYPE_OPERATOR_MINUS);
+
+                return;
+            }
+
 
 
         case '*':
-            iter.match('=') ?
-                tokens.emplace_back(TYPE_OPERATOR_MUL_EQ) :
-                tokens.emplace_back(TYPE_OPERATOR_MUL);
+            if (iter.match('=')) {
+                tokens.emplace(TYPE_OPERATOR_MUL_EQ);
 
-            return;
+                return;
+
+
+            } else {
+                tokens.emplace(TYPE_OPERATOR_MUL);
+
+                return;
+            }
+
 
 
         case '\'':
-            tokens.emplace_back(TYPE_OPERATOR_QUOTE);
+            tokens.emplace(TYPE_OPERATOR_QUOTE);
 
             return;
+
 
 
         case '^':
-            tokens.emplace_back(TYPE_OPERATOR_RAISE);
+            tokens.emplace(TYPE_OPERATOR_RAISE);
 
             return;
+
 
 
         case '|':
-            if (iter.match('>'))
-                tokens.emplace_back(TYPE_OPERATOR_PIPE);
+            if (iter.match('>')) {
+                tokens.emplace(TYPE_OPERATOR_PIPE);
 
-            return;
+                return;
+            }
+
 
 
         case '/':
-            if (iter.match('/'))
-                iter.next_while([] (lex::StringIter&, char c) {
+            if (iter.match('/')) {
+                iter.next_while([] (auto&, char c) {
                     return (c != '\n');
                 });
 
-            else if (iter.match('='))
-                tokens.emplace_back(TYPE_OPERATOR_DIV_EQ);
+                return;
 
-            else
-                tokens.emplace_back(TYPE_OPERATOR_DIV);
 
-            return;
+            } else if (iter.match('=')) {
+                tokens.emplace(TYPE_OPERATOR_DIV_EQ);
+
+                return;
+
+
+            } else {
+                tokens.emplace(TYPE_OPERATOR_DIV);
+
+                return;
+            }
+
 
 
         case '=':
-            iter.match('=') ?
-                tokens.emplace_back(TYPE_OPERATOR_COMPARE) :
-                tokens.emplace_back(TYPE_OPERATOR_ASSIGN);
+            if (iter.match('=')) {
+                tokens.emplace(TYPE_OPERATOR_COMPARE);
 
-            return;
+                return;
+
+
+            } else {
+                tokens.emplace(TYPE_OPERATOR_ASSIGN);
+
+                return;
+            }
 
 
 
         default:
-            throw lex::exception::Error("unknown operator '" + std::string{iter.peek()} + "'.");
+            throw lex::exception::Error("unknown operator '" + std::string{iter.ptr()} + "'.");
     }
 
 };
@@ -295,8 +358,8 @@ void op_handler(lex::StringIter& iter, lex::alias::TokenGroup& tokens) {
 
 
 
-void whitespace_handler(lex::StringIter& iter, lex::alias::TokenGroup&) {
-    iter.next_while([] (lex::StringIter&, char c) {
+void whitespace_handler(StringIter& iter, Group&) {
+    iter.next_while([] (auto&, char c) {
         return (static_cast<bool>(std::isspace(c)));
     });
 }
@@ -308,26 +371,13 @@ void whitespace_handler(lex::StringIter& iter, lex::alias::TokenGroup&) {
 
 
 
-void left_brace_handler(lex::StringIter&, lex::alias::TokenGroup& tokens) {
-    tokens.emplace_back(TYPE_BRACE_LEFT);
+void left_brace_handler(StringIter&, Group& tokens) {
+    tokens.emplace(TYPE_BRACE_LEFT);
 }
 
 
-void right_brace_handler(lex::StringIter&, lex::alias::TokenGroup& tokens) {
-    tokens.emplace_back(TYPE_BRACE_RIGHT);
-}
-
-
-
-
-
-
-void left_bracket_handler(lex::StringIter&, lex::alias::TokenGroup& tokens) {
-    tokens.emplace_back(TYPE_BRACKET_LEFT);
-}
-
-void right_bracket_handler(lex::StringIter&, lex::alias::TokenGroup& tokens) {
-    tokens.emplace_back(TYPE_BRACKET_RIGHT);
+void right_brace_handler(StringIter&, Group& tokens) {
+    tokens.emplace(TYPE_BRACE_RIGHT);
 }
 
 
@@ -335,30 +385,43 @@ void right_bracket_handler(lex::StringIter&, lex::alias::TokenGroup& tokens) {
 
 
 
-
-void left_paren_handler(lex::StringIter&, lex::alias::TokenGroup& tokens) {
-    tokens.emplace_back(TYPE_PAREN_LEFT);
+void left_bracket_handler(StringIter&, Group& tokens) {
+    tokens.emplace(TYPE_BRACKET_LEFT);
 }
 
-void right_paren_handler(lex::StringIter&, lex::alias::TokenGroup& tokens) {
-    tokens.emplace_back(TYPE_PAREN_RIGHT);
-}
-
-
-
-
-
-
-void seperator_handler(lex::StringIter& iter, lex::alias::TokenGroup& tokens) {
-    tokens.emplace_back(TYPE_SEPERATOR, std::string{iter.peek()});
+void right_bracket_handler(StringIter&, Group& tokens) {
+    tokens.emplace(TYPE_BRACKET_RIGHT);
 }
 
 
 
 
 
-void comment_handler(lex::StringIter& iter, lex::alias::TokenGroup&) {
-    iter.next_while([] (lex::StringIter&, char c) {
+
+
+void left_paren_handler(StringIter&, Group& tokens) {
+    tokens.emplace(TYPE_PAREN_LEFT);
+}
+
+void right_paren_handler(StringIter&, Group& tokens) {
+    tokens.emplace(TYPE_PAREN_RIGHT);
+}
+
+
+
+
+
+
+void seperator_handler(StringIter& iter, Group& tokens) {
+    tokens.emplace(TYPE_SEPERATOR, std::string_view{iter.ptr(), 1});
+}
+
+
+
+
+
+void comment_handler(StringIter& iter, Group&) {
+    iter.next_while([] (auto&, char c) {
         return (c != '\n');
     });
 }

@@ -9,6 +9,6 @@
 
 namespace ws::lexer {
 
-    alias::TokenGroup lexer(const Rules& rules, const std::string& input);
+    alias::Group lexer(const Rules& rules, const std::string& input);
 
 }

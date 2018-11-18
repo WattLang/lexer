@@ -7,11 +7,11 @@
 namespace ws::lexer {
     // Check if next character is expected and advance.
     bool StringIter::match(char expect) {
-        if (is_end() or peek(1) != expect)
+        if (peek(1) != expect)
             return false;
 
 
-        incr(2);
+        incr(1);
         return true;
     }
 
@@ -24,7 +24,7 @@ namespace ws::lexer {
             // The size is offset because the predicate must look forward by size + 1 in the case of the final character which would lead to an exception.
 
             // (Expression order is important here.)
-            if (is_end(-1) or not pred(*this, peek(1)))
+            if (not pred(*this, peek(1)))
                 break;
 
             incr();
@@ -32,7 +32,7 @@ namespace ws::lexer {
     }
 
 
-    const std::string StringIter::read_while(alias::WhilePred pred) {
+    std::string_view StringIter::read_while(alias::WhilePred pred) {
         const char *begin = current;
         std::size_t length = 1;
 
@@ -43,7 +43,7 @@ namespace ws::lexer {
             // The size is offset because the predicate must look forward by size + 1 in the case of the final character which would lead to an exception.
 
             // (Expression order is important here.)
-            if (is_end(-1) or not pred(*this, peek(1)))
+            if (not pred(*this, peek(1)))
                 break;
 
 
@@ -51,7 +51,7 @@ namespace ws::lexer {
             ++length;
         }
 
-        return std::string(begin, length);
+        return {begin, length};
     }
 
 }

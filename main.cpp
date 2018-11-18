@@ -7,6 +7,7 @@
 #include <constant.h>
 #include <stringiter/stringiter.h>
 #include <rules/rules.h>
+#include <lookup/lookup.h>
 #include <exception.h>
 #include <lexer/lexer.h>
 
@@ -46,7 +47,7 @@ int main(int, char const*[]) {
 
 
     auto data = ws::module::receive_all();
-    lex::alias::TokenGroup tokens;
+    lex::alias::Group tokens;
 
 
     if (data.empty()) {
@@ -64,6 +65,12 @@ int main(int, char const*[]) {
         ws::module::errorln("unrecoverable error!");
         return 1;
     }
+
+
+    ws::module::run_if<lex::constant::PRINT_TOKENS>([&] {
+        for (const auto& tok: tokens)
+            ws::module::println(tok);
+    });
 
 
     return 0;

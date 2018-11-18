@@ -10,13 +10,10 @@
 
 namespace ws::lexer {
     struct Rules {
+        using entries_t = std::array<alias::Rule, 256>;
+        using size_type = entries_t::size_type;
 
-        // Aliases
-        using Entries = std::array<alias::Rule, 256>;
-
-
-        // Data
-        Entries entries;
+        entries_t entries;
 
 
 
@@ -65,11 +62,11 @@ namespace ws::lexer {
 
 
         constexpr void insert (const char* chars, const alias::Rule& rule) {
-            Entries::size_type i = 0;
+            size_type i = 0;
             char p = chars[i];
 
             while (p != '\0') {
-                entries.at(static_cast<Entries::size_type>(p)) = rule;
+                entries.at(static_cast<size_type>(p)) = rule;
                 p = chars[i++];
             }
         }
