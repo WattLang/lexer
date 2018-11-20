@@ -12,6 +12,7 @@ namespace ws::lexer {
         const char *current = nullptr;
 
 
+
         StringIter(std::string_view buffer_):
             buffer(buffer_),
             current(buffer.data())
@@ -26,16 +27,14 @@ namespace ws::lexer {
 
 
 
-        // Iterate.
-        char next() { return *current++; }
 
-        char next(const unsigned i) {
-            current += i;
-            return *(current - i);
+
+        // Iterate.
+        char next() {
+            return *current++;
         }
 
         void incr() noexcept { current++; }
-        void incr(const unsigned i) noexcept { current += i; }
 
 
 
@@ -46,18 +45,14 @@ namespace ws::lexer {
 
 
         // Info.
-        std::string_view::size_type size() const noexcept { return buffer.size(); }
+        std::string_view::size_type size() const noexcept {
+            return buffer.size();
+        }
 
         bool is_end(int offset = 0) const noexcept {
             return current >= ((buffer.data() + size()) + offset);
         }
 
-
-
-        // Read N characters.
-        /*const std::string read(int n) const {
-            return buffer.substr(static_cast<unsigned long>(current - buffer.data() + 1), n);
-        }*/
 
 
 

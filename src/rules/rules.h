@@ -20,7 +20,9 @@ namespace ws::lexer {
 
         // Ctor
         constexpr Rules(
-            const std::initializer_list<std::pair<const char*, const alias::Rule>>& entries_
+            const std::initializer_list<
+                std::pair<const char*, const alias::Rule>
+            >& entries_
         ):
             entries{{nullptr}}
         {

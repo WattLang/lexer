@@ -2,7 +2,6 @@
 
 #include <stdexcept>
 #include <string>
-#include <chrono>
 
 #include <constant.h>
 #include <exception.h>
@@ -13,19 +12,6 @@
 
 
 
-// Adds commas to large numbers. e.g `123456789` -> `123,456,789`
-template <typename T>
-std::string num_to_formatted_str(T val) {
-    auto num = std::to_string(val);
-    int ins_pos = num.size() - 3;
-
-    for (; ins_pos > 0; ins_pos -= 3)
-        num.insert(static_cast<std::string::size_type>(ins_pos), ",");
-
-    return num;
-}
-
-
 
 
 
@@ -34,20 +20,14 @@ namespace ws::lexer {
         const Rules& rules,
         const std::string& input
     ) {
-        const auto start = std::chrono::high_resolution_clock::now();
-
-
         ws::lexer::StringIter iter(input);
 
         alias::Group tokens(input, 3.3);
         // 3.3 here represents the ratio of the number of input characters to the number of output tokens. this seems to be a good value in my testing.
 
 
-
-
         try {
             while (not iter.is_end()) {
-
                 // check if rule is valid.
                 try {
                     if (const auto& rule = rules.at(iter.peek()); not rule) {
@@ -104,57 +84,7 @@ namespace ws::lexer {
 
 
 
-
-
-
-
-
-        // Statistics.
-        const auto end = std::chrono::high_resolution_clock::now();
-
-
-
-        ws::module::run_if<
-            constant::ENABLE_STATS && not constant::ENABLE_VERBOSE
-        >([&] {
-            const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-
-
-            ws::module::successln_h("lex time: ", duration, "ms!");
-        });
-
-
-        ws::module::run_if<
-            constant::ENABLE_STATS && constant::ENABLE_VERBOSE
-        >([&] {
-            const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-
-
-            ws::module::noticeln_h("statistics");
-
-            ws::module::print_tabs(1);
-            ws::module::println_em("string", "       ", num_to_formatted_str(input.size()));
-
-            ws::module::print_tabs(1);
-            ws::module::println_em("capacity", "     ", num_to_formatted_str(tokens.capacity()));
-
-            ws::module::print_tabs(1);
-            ws::module::println_em("tokens", "       ", num_to_formatted_str(tokens.size()));
-
-
-            ws::module::print_tabs(1);
-            ws::module::println_em("diff", "         ", num_to_formatted_str(tokens.capacity() - tokens.size()));
-
-
-            ws::module::print_tabs(1);
-            ws::module::println_em("lex time", "     ", num_to_formatted_str(duration), "ms");
-        });
-
-
-
-
-
-        tokens.shrink_to_fit();
+        //tokens.shrink_to_fit();
 
         return tokens;
     }

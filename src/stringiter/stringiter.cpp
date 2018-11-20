@@ -11,7 +11,7 @@ namespace ws::lexer {
             return false;
 
 
-        incr(1);
+        incr();
         return true;
     }
 
