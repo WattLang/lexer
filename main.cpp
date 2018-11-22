@@ -4,7 +4,6 @@
 #include <string>
 #include <cctype>
 #include <unordered_set>
-#include <set>
 
 #include <libs/module.h>
 #include <constant.h>
@@ -64,7 +63,7 @@ int main(int, char const*[]) {
     const auto start_recv = std::chrono::high_resolution_clock::now();
 
     auto data = ws::module::receive_all();
-    lex::alias::Group tokens;
+    lex::Group tokens;
 
     if (data.empty()) {
         ws::module::warnln_em("stream is empty.", " (make sure you pipe some input into the program)");

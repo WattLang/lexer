@@ -26,11 +26,6 @@
     };
 
 
-
-
-
-
-
 namespace ws::lexer::exception {
     WS_LEXER_NEW_EXCEPTION_TYPE(Notice, "Lexical notice!")
     WS_LEXER_NEW_EXCEPTION_TYPE(Warn, "Lexical warning!")
@@ -41,10 +36,6 @@ namespace ws::lexer::exception {
     WS_LEXER_NEW_EXCEPTION_TYPE(NonFatal, "Recoverable error.")
     WS_LEXER_NEW_EXCEPTION_TYPE(Fatal, "Unrecoverable error.")
 }
-
-
-
-
 
 
 #undef WS_LEXER_NEW_EXCEPTION_TYPE

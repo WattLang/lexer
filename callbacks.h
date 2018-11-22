@@ -5,13 +5,13 @@
 
 
 
-using Group      = lex::alias::Group;
+using Group      = lex::Group;
 using StringIter = lex::StringIter;
 
 
 
 
-lex::alias::Position CURRENT_POSITION;
+lex::Position CURRENT_POSITION;
 
 
 
@@ -118,8 +118,8 @@ constexpr const char* token_strings[] = {
 
 
 
-constexpr lex::LookupTable ident_table = {
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_", true
+constexpr lex::LookupTable ident_table{
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
 };
 
 const std::unordered_set<std::string_view> keywords = {
@@ -165,7 +165,7 @@ void ident_handler(StringIter& iter, Group& tokens) {
 
 
 
-constexpr lex::LookupTable num_table = {"0123456789", true};
+constexpr lex::LookupTable num_table{"0123456789"};
 
 void number_handler(StringIter& iter, Group& tokens) {
     const auto old_pos = CURRENT_POSITION;
@@ -580,7 +580,7 @@ void op_handler(StringIter& iter, Group& tokens) {
 
 
         default:
-            throw lex::exception::Error("unknown operator '" + std::string{iter.ptr()} + "'.");
+            throw lex::exception::Error("unknown operator '" + std::string{iter.ptr(), 1} + "'.");
     }
 
 };

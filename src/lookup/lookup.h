@@ -3,22 +3,21 @@
 #include <array>
 
 
-
 namespace ws::lexer {
     struct LookupTable {
         using table_t = std::array<bool, 256>;
         using size_type = table_t::size_type;
 
-        table_t table;
+        table_t table = {{false}};
 
 
 
-        constexpr LookupTable(const char* chars, bool flag): table{{false}} {
+        constexpr LookupTable(const char* chars) {
             size_type i = 0;
             char p = chars[i];
 
             while (p != '\0') {
-                table.at(static_cast<size_type>(p)) = flag;
+                table.at(static_cast<size_type>(p)) = true;
                 p = chars[i++];
             }
         }

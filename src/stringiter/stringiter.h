@@ -8,44 +8,40 @@
 
 namespace ws::lexer {
     struct StringIter {
-        std::string_view buffer;
-        const char *current = nullptr;
+        using ptr_type = const char*;
+        using buffer_type = std::string_view;
+
+
+        // Data.
+        buffer_type buffer;
+        ptr_type current = nullptr;
 
 
 
-        StringIter(std::string_view buffer_):
-            buffer(buffer_),
-            current(buffer.data())
-        {}
+        // Constructor.
+        StringIter(buffer_type buffer_):
+            buffer(buffer_), current(buffer.data())
+        {
 
-
-
-
-        const char* ptr() const {
-            return current;
         }
 
 
-
+        // Getters.
+        ptr_type ptr() const { return current; }
 
 
         // Iterate.
-        char next() {
-            return *current++;
-        }
-
-        void incr() noexcept { current++; }
-
+        char next()          { return *current++; }
+        void incr() noexcept { current++;         }
 
 
         // View characters.
-        char peek(const unsigned i) const { return *(current + i); }
-        char peek()                 const { return *(current);     }
-
+        char peek(int i) const { return *(current + i); }
+        char peek()            const { return *(current);     }
 
 
         // Info.
-        std::string_view::size_type size() const noexcept {
+        buffer_type::size_type size() const noexcept {
             return buffer.size();
         }
 
@@ -54,13 +50,13 @@ namespace ws::lexer {
         }
 
 
-
-
-        // Check if next character is expected and advance.
+        // Conditional consume.
         bool match(char expect);
 
-        // Skip over characters until a certain condition is met.
-        void next_while(alias::WhilePred pred);
-        std::string_view read_while(alias::WhilePred pred);
+        // Skip characters until predicate fails.
+        void next_while(WhilePred pred);
+
+        // Consume characters while predicate is satisfied.
+        buffer_type read_while(WhilePred pred);
     };
 }
