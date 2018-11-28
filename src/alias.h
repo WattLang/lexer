@@ -12,6 +12,6 @@ namespace ws::lexer {
     using Group    = ws::token::Group;
     using Position = ws::token::Position;
 
-    using WhilePred = bool(*)(StringIter&, char);
+    using WhilePred = bool(*const)(StringIter&, char);
     using Rule      = void(*)(StringIter&, Group&);
 }

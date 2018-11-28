@@ -1,9 +1,14 @@
 #include <iostream>
+#include <iomanip>
+#include <locale>
 #include <fstream>
 #include <chrono>
 #include <string>
 #include <cctype>
-#include <unordered_set>
+#include <array>
+#include <algorithm>
+#include <unordered_map>
+#include <map>
 
 #include <libs/module.h>
 #include <constant.h>
@@ -22,27 +27,29 @@ namespace lex = ws::lexer;
 
 
 constexpr lex::Rules handlers = {
-    {
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_",
-        ident_handler
-    },
+    {"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_", on_ident},
 
-    {"\n\t\r ", whitespace_handler},
-    {"0123456789", number_handler},
-    {"|+-*/=<>^'", op_handler},
+    {" \f\r\t\v", on_whitespace},
+    {"\n", on_newline},
 
-    {"{", left_brace_handler},
-    {"}", right_brace_handler},
+    {"0123456789", on_number},
+    {"+-*/=<>", on_op},
 
-    {"[", left_bracket_handler},
-    {"]", right_bracket_handler},
+    {":", on_colon},
+    {";", on_semicolon},
+    {".", on_dot},
+    {",", on_comma},
 
-    {"(", left_paren_handler},
-    {")", right_paren_handler},
+    {"\"", on_string},
 
-    {",:.;", seperator_handler},
-    {"\"", string_handler},
-    {"#", comment_handler}
+    {"(", on_left_paren},
+    {")", on_right_paren},
+
+    {"[", on_left_brace},
+    {"]", on_right_brace},
+
+    {"{", on_left_bracket},
+    {"}", on_right_bracket}
 };
 
 
@@ -104,16 +111,11 @@ int main(int, char const*[]) {
 
 
 
-    // Util function
-    auto fmt_num_str = [] (auto&& val) {
-        auto num = std::to_string(val);
-        int ins_pos = num.size() - 3;
 
-        for (; ins_pos > 0; ins_pos -= 3)
-            num.insert(static_cast<std::string::size_type>(ins_pos), ",");
-
-        return num;
-    };
+    ws::module::printer.setf(std::ios::fixed);
+    ws::module::printer.setf(std::ios::showpoint);
+    ws::module::printer.precision(3);
+    ws::module::printer.imbue(std::locale(""));
 
 
 
@@ -155,22 +157,6 @@ int main(int, char const*[]) {
             auto left_str   = std::string{content};
             auto middle_str = std::string{token_strings[type]};
             auto right_str  = line_str + ", " + column_str;
-
-
-
-            if (type == TYPE_WHITESPACE) {
-                std::string new_str;
-
-                for (const auto& c: middle_str) {
-                    if (c == '\n')
-                        new_str += "\\n";
-
-                    else
-                        new_str += c;
-                }
-
-                middle_str = new_str;
-            }
 
 
 
@@ -319,21 +305,21 @@ int main(int, char const*[]) {
 
         ws::module::print(
             "(", dim::grey, "file", reset, ") ",
-            normal::red, fmt_num_str(recv_time), "ms"
+            normal::red, recv_time, "ms"
         );
 
         ws::module::print(" / ");
 
         ws::module::print(
             "(", dim::grey, "lexer", reset, ") ",
-            bold, bright::yellow, fmt_num_str(lexer_time), "ms"
+            bold, bright::yellow, lexer_time, "ms"
         );
 
         ws::module::print(" / ");
 
         ws::module::println(
             "(", dim::grey, "total", reset, ") ",
-            bright::blue, fmt_num_str(total_time), "ms"
+            bright::blue, total_time, "ms"
         );
     }
 
@@ -351,26 +337,55 @@ int main(int, char const*[]) {
         lex::constant::ENABLE_STATS and lex::constant::ENABLE_VERBOSE
     ) {
 
-        const auto total_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_total - start_total).count();
+        const auto total_time_nano = std::chrono::duration_cast<std::chrono::nanoseconds>(end_total - start_total).count();
 
-        const auto lexer_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_lexer - start_lexer).count();
+        const auto lexer_time_nano = std::chrono::duration_cast<std::chrono::nanoseconds>(end_lexer - start_lexer).count();
 
-        const auto recv_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_recv - start_recv).count();
+        const auto recv_time_nano = std::chrono::duration_cast<std::chrono::nanoseconds>(end_recv - start_recv).count();
+
+
+        const double total_time_milli = total_time_nano / 1000 / 1000;
+        const double lexer_time_milli = lexer_time_nano / 1000 / 1000;
+        const double recv_time_milli  = recv_time_nano  / 1000 / 1000;
+
+
+        const double total_time_sec = total_time_milli / 100;
+        const double lexer_time_sec = lexer_time_milli / 100;
+        const double recv_time_sec  = recv_time_milli  / 100;
+
+
+        const double input_size_mb = static_cast<double>(data.size()) / 1024 / 1024;
+
+        const double bandwidth = input_size_mb / lexer_time_sec;
+
+        const double ln_per_ms = static_cast<double>(CURRENT_POSITION.line) / lexer_time_milli;
+
+        const double chr_per_ms = static_cast<double>(data.size()) / lexer_time_milli;
+
+
 
 
         ws::module::print_lines(1);
         ws::module::println_h(ws::module::tabs(1), "Statistics");
         ws::module::print_lines(1);
 
-        ws::module::successln("File  => ", fmt_num_str(recv_time),  "ms");
-        ws::module::successln("Lexer => ", fmt_num_str(lexer_time), "ms");
-        ws::module::successln("Total => ", fmt_num_str(total_time), "ms");
+
+
+        ws::module::warnln("Throughput => ", bandwidth,  " MB/s");
+        ws::module::warnln("Lines      => ", ln_per_ms,  " ln/ms");
+        ws::module::warnln("Chars      => ", chr_per_ms, " chr/ms");
+
 
         ws::module::print_lines(1);
-        ws::module::noticeln("Input      => ", fmt_num_str(data.size()), " B");
-        ws::module::noticeln("Tokens     => ", fmt_num_str(tokens.size()));
-        ws::module::noticeln("Capacity   => ", fmt_num_str(tokens.capacity()));
-        ws::module::noticeln("Difference => ", fmt_num_str(tokens.capacity() - tokens.size()));
+        ws::module::successln("File  => ", recv_time_milli,  "ms");
+        ws::module::successln("Lexer => ", lexer_time_milli, "ms");
+        ws::module::successln("Total => ", total_time_milli, "ms");
+
+        ws::module::print_lines(1);
+        ws::module::noticeln("Input      => ", data.size(), " B");
+        ws::module::noticeln("Tokens     => ", tokens.size());
+        ws::module::noticeln("Capacity   => ", tokens.capacity());
+        ws::module::noticeln("Difference => ", tokens.capacity() - tokens.size());
         ws::module::print_lines(1);
     }
 

@@ -1,15 +1,7 @@
 #pragma once
 
-
-
-
-
-
 using Group      = lex::Group;
 using StringIter = lex::StringIter;
-
-
-
 
 lex::Position CURRENT_POSITION;
 
@@ -22,8 +14,12 @@ enum: ws::token::Type {
     TYPE_KEYWORD,
     TYPE_STRING,
     TYPE_SEPERATOR,
+    TYPE_COMMA,
+    TYPE_DOT,
     TYPE_COMMENT,
-    TYPE_FUNC_DEF,
+    TYPE_DOUBLE_COLON,
+    TYPE_SINGLE_COLON,
+    TYPE_SEMICOLON,
     TYPE_OPERATOR,
     TYPE_OPERATOR_RAISE,
     TYPE_OPERATOR_ARROW,
@@ -52,7 +48,21 @@ enum: ws::token::Type {
     TYPE_BRACE_LEFT,
     TYPE_BRACE_RIGHT,
     TYPE_LITERAL_FLOAT,
-    TYPE_WHITESPACE
+    TYPE_WHITESPACE,
+    TYPE_KEYWORD_IF,
+    TYPE_KEYWORD_ELSE,
+    TYPE_KEYWORD_WHILE,
+    TYPE_KEYWORD_FOR,
+    TYPE_KEYWORD_VAR,
+    TYPE_KEYWORD_LET,
+    TYPE_KEYWORD_RETURN,
+    TYPE_KEYWORD_BREAK,
+    TYPE_KEYWORD_CONTINUE,
+    TYPE_KEYWORD_TRUE,
+    TYPE_KEYWORD_FALSE,
+    TYPE_KEYWORD_STRUCT,
+    TYPE_KEYWORD_NIL,
+    TYPE_KEYWORD_SELF
 };
 
 
@@ -62,8 +72,12 @@ constexpr const char* token_strings[] = {
     "TYPE_KEYWORD",
     "TYPE_STRING",
     "TYPE_SEPERATOR",
+    "TYPE_COMMA",
+    "TYPE_DOT",
     "TYPE_COMMENT",
-    "TYPE_FUNC_DEF",
+    "TYPE_DOUBLE_COLON",
+    "TYPE_SINGLE_COLON",
+    "TYPE_SEMICOLON",
     "TYPE_OPERATOR",
     "TYPE_OPERATOR_RAISE",
     "TYPE_OPERATOR_ARROW",
@@ -92,8 +106,84 @@ constexpr const char* token_strings[] = {
     "TYPE_BRACE_LEFT",
     "TYPE_BRACE_RIGHT",
     "TYPE_LITERAL_FLOAT",
-    "TYPE_WHITESPACE"
+    "TYPE_WHITESPACE",
+    "TYPE_KEYWORD_IF",
+    "TYPE_KEYWORD_ELSE",
+    "TYPE_KEYWORD_WHILE",
+    "TYPE_KEYWORD_FOR",
+    "TYPE_KEYWORD_VAR",
+    "TYPE_KEYWORD_LET",
+    "TYPE_KEYWORD_RETURN",
+    "TYPE_KEYWORD_BREAK",
+    "TYPE_KEYWORD_CONTINUE",
+    "TYPE_KEYWORD_TRUE",
+    "TYPE_KEYWORD_FALSE",
+    "TYPE_KEYWORD_STRUCT",
+    "TYPE_KEYWORD_NIL",
+    "TYPE_KEYWORD_SELF"
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#define STATELESS_HANDLER(name, type, str) \
+    void name(StringIter& iter, Group& tokens) { \
+        const auto old_pos = CURRENT_POSITION; \
+     \
+        if constexpr(lex::constant::PRINT_TOKENS) { \
+            tokens.emplace(type, old_pos, str); \
+     \
+        } else { \
+            tokens.emplace(type, old_pos); \
+        } \
+     \
+        CURRENT_POSITION.next(); \
+    }
+
+
+
+
+
+
+void on_newline(StringIter& iter, Group& tokens) {
+    CURRENT_POSITION.nextln();
+}
+
+
+void on_whitespace(StringIter& iter, Group& tokens) {
+    CURRENT_POSITION.next();
+}
+
+
+
+STATELESS_HANDLER(on_left_paren,    TYPE_PAREN_LEFT, "(")
+STATELESS_HANDLER(on_right_paren,   TYPE_PAREN_LEFT, ")")
+
+STATELESS_HANDLER(on_left_brace,    TYPE_PAREN_LEFT, "[")
+STATELESS_HANDLER(on_right_brace,   TYPE_PAREN_LEFT, "]")
+
+STATELESS_HANDLER(on_left_bracket,  TYPE_PAREN_LEFT, "{")
+STATELESS_HANDLER(on_right_bracket, TYPE_PAREN_LEFT, "}")
+
+
+STATELESS_HANDLER(on_comma,       TYPE_COMMA,     ",")
+STATELESS_HANDLER(on_dot,         TYPE_DOT,       ".")
+STATELESS_HANDLER(on_semicolon,   TYPE_SEMICOLON, ";")
 
 
 
@@ -122,27 +212,46 @@ constexpr lex::LookupTable ident_table{
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
 };
 
-const std::unordered_set<std::string_view> keywords = {
-    "var", "struct", "self",
-    "if", "else", "for", "while",
-    "break", "continue", "return",
-    "nil", "true", "false"
+constexpr std::pair<std::string_view, ws::token::Type> keyw[] = {
+    {"var",      TYPE_KEYWORD_VAR},
+    {"struct",   TYPE_KEYWORD_STRUCT},
+    {"self",     TYPE_KEYWORD_SELF},
+    {"if",       TYPE_KEYWORD_IF},
+    {"else",     TYPE_KEYWORD_ELSE},
+    {"for",      TYPE_KEYWORD_FOR},
+    {"while",    TYPE_KEYWORD_WHILE},
+    {"break",    TYPE_KEYWORD_BREAK},
+    {"continue", TYPE_KEYWORD_CONTINUE},
+    {"return",   TYPE_KEYWORD_RETURN},
+    {"nil",      TYPE_KEYWORD_NIL},
+    {"true",     TYPE_KEYWORD_TRUE},
+    {"false",    TYPE_KEYWORD_FALSE}
 };
 
-void ident_handler(StringIter& iter, Group& tokens) {
+
+void on_ident(StringIter& iter, Group& tokens) {
     const auto old_pos = CURRENT_POSITION;
 
-    const auto builder = iter.read_while([] (auto& iter2, char c) {
+    const auto builder = iter.read_while([] (auto&, char c) {
         CURRENT_POSITION.next();
         return ident_table[c];
     });
 
+    CURRENT_POSITION.next(builder.size());
 
-    if (keywords.count(builder)) {
-        tokens.emplace(TYPE_KEYWORD, old_pos, builder);
-        return;
+    for (auto it = std::begin(keyw); it != std::end(keyw); ++it) {
+        if (it->first == builder) {
+            const auto& [str, type] = *it;
+
+            if constexpr(lex::constant::PRINT_TOKENS)
+                tokens.emplace(type, old_pos, builder);
+
+            else
+                tokens.emplace(type, old_pos);
+
+            return;
+        }
     }
-
 
     tokens.emplace(TYPE_IDENTIFIER, old_pos, builder);
 };
@@ -165,12 +274,217 @@ void ident_handler(StringIter& iter, Group& tokens) {
 
 
 
-constexpr lex::LookupTable num_table{"0123456789"};
 
-void number_handler(StringIter& iter, Group& tokens) {
+
+
+
+
+
+
+
+/*constexpr lex::LookupTable op_table{"+-*=<>/"};
+
+constexpr std::pair<std::string_view, ws::token::Type> op_keyw[] = {
+    {"+",  TYPE_OPERATOR_PLUS},
+    {"-",  TYPE_OPERATOR_MINUS},
+    {"/",  TYPE_OPERATOR_DIV},
+    {"*",  TYPE_OPERATOR_MUL},
+    {"++", TYPE_OPERATOR_INCR},
+    {"--", TYPE_OPERATOR_DECR},
+    {"+=", TYPE_OPERATOR_PLUS_EQ},
+    {"-=", TYPE_OPERATOR_MINUS_EQ},
+    {"/=", TYPE_OPERATOR_DIV_EQ},
+    {"*=", TYPE_OPERATOR_MUL_EQ},
+    {"<",  TYPE_OPERATOR_LESS},
+    {">",  TYPE_OPERATOR_MORE},
+    {"=",  TYPE_OPERATOR_ASSIGN},
+    {"<=", TYPE_OPERATOR_LESS_EQ},
+    {">=", TYPE_OPERATOR_MORE_EQ},
+    {"==", TYPE_OPERATOR_COMPARE},
+    {"->", TYPE_OPERATOR_ARROW},
+    {"//", TYPE_COMMENT}
+};
+
+void on_op(StringIter& iter, Group& tokens) {
     const auto old_pos = CURRENT_POSITION;
 
-    const auto builder = iter.read_while([] (auto& iter2, char c) {
+    const auto op = iter.read_while([] (auto&, char c) {
+        CURRENT_POSITION.next();
+        return op_table[c];
+    });
+
+    CURRENT_POSITION.next(op.size());
+
+    for (auto it = std::begin(op_keyw); it != std::end(op_keyw); ++it) {
+        if (it->first == op) {
+            const auto& [str, type] = *it;
+
+            if constexpr(lex::constant::PRINT_TOKENS)
+                tokens.emplace(type, old_pos, op);
+
+            else
+                tokens.emplace(type, old_pos);
+
+            return;
+        }
+    }
+
+    throw lex::exception::Error(
+        "unknown operator '" + std::string{op} + "'."
+    );
+};*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#define HANDLE_OP(type, str, inc) \
+    if constexpr(lex::constant::PRINT_TOKENS) { \
+        tokens.emplace(type, old_pos, str); \
+    } \
+ \
+    if constexpr(not lex::constant::PRINT_TOKENS) { \
+        tokens.emplace(type, old_pos); \
+    } \
+ \
+    CURRENT_POSITION.next(inc); \
+ \
+    return;
+
+
+
+
+
+void on_op(StringIter& iter, Group& tokens) {
+    const auto old_pos = CURRENT_POSITION;
+
+    switch (iter.peek()) {
+
+        case '+':
+            if (iter.match('=')) {
+                HANDLE_OP(TYPE_OPERATOR_PLUS_EQ, "+=", 2)
+
+            } else if (iter.match('+')) {
+                HANDLE_OP(TYPE_OPERATOR_INCR, "++", 2)
+
+            } else {
+                HANDLE_OP(TYPE_OPERATOR_PLUS, "+", 1)
+            }
+
+
+        case '<':
+            if (iter.match('=')) {
+                HANDLE_OP(TYPE_OPERATOR_LESS_EQ, "<=", 2)
+
+            } else {
+                HANDLE_OP(TYPE_OPERATOR_LESS, "<", 1)
+            }
+
+
+        case '>':
+            if (iter.match('=')) {
+                HANDLE_OP(TYPE_OPERATOR_MORE_EQ, ">=", 2)
+
+            } else {
+                HANDLE_OP(TYPE_OPERATOR_MORE, ">", 1)
+            }
+
+
+        case '-':
+            if (iter.match('=')) {
+                HANDLE_OP(TYPE_OPERATOR_MINUS_EQ, "-=", 2)
+
+            } else if (iter.match('-')) {
+                HANDLE_OP(TYPE_OPERATOR_DECR, "--", 2)
+
+            } else if (iter.match('>')) {
+                HANDLE_OP(TYPE_OPERATOR_ARROW, "->", 2)
+
+            } else {
+                HANDLE_OP(TYPE_OPERATOR_MINUS, "-", 1)
+            }
+
+
+        case '*':
+            if (iter.match('=')) {
+                HANDLE_OP(TYPE_OPERATOR_MUL_EQ, "*=", 2)
+
+            } else {
+                HANDLE_OP(TYPE_OPERATOR_MUL, "*", 1)
+            }
+
+
+        case '=':
+            if (iter.match('=')) {
+                HANDLE_OP(TYPE_OPERATOR_COMPARE, "==", 2)
+
+            } else {
+                HANDLE_OP(TYPE_OPERATOR_ASSIGN, "=", 1)
+            }
+
+
+         case '/':
+            if (iter.match('/')) {
+                iter.next_while([] (auto& iter2, char c) {
+                    CURRENT_POSITION.next();
+                    return (c != '\n');
+                });
+
+                return;
+
+            } else if (iter.match('=')) {
+                HANDLE_OP(TYPE_OPERATOR_DIV_EQ, "/=", 2)
+
+            } else {
+                HANDLE_OP(TYPE_OPERATOR_DIV, "/", 1)
+            }
+
+
+        default: break;
+    }
+
+
+    throw lex::exception::Error(
+        "unknown operator '" + std::string{iter.ptr(), 1} + "'."
+    );
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+constexpr lex::LookupTable num_table{"0123456789"};
+
+void on_number(StringIter& iter, Group& tokens) {
+    const auto old_pos = CURRENT_POSITION;
+
+    const auto builder = iter.read_while([] (auto&, char c) {
         CURRENT_POSITION.next();
         return num_table[c];
     });
@@ -207,14 +521,7 @@ void number_handler(StringIter& iter, Group& tokens) {
 
 
 
-void string_handler(StringIter& iter, Group& tokens) {
-    if (iter.match('"')) {
-        tokens.emplace(TYPE_STRING, CURRENT_POSITION);
-        iter.incr();
-        CURRENT_POSITION.next(2);
-        return;
-    }
-
+void on_string(StringIter& iter, Group& tokens) {
     const auto old_pos = CURRENT_POSITION;
 
     iter.incr();
@@ -241,528 +548,37 @@ void string_handler(StringIter& iter, Group& tokens) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void op_handler(StringIter& iter, Group& tokens) {
+void on_colon(StringIter& iter, Group& tokens) {
     const auto old_pos = CURRENT_POSITION;
 
-    switch (iter.peek()) {
-
-        case '+':
-            if (iter.match('=')) {
-                if constexpr(lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_PLUS_EQ, old_pos, "+=");
-                }
-
-                if constexpr(not lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_PLUS_EQ, old_pos);
-                }
-
-                CURRENT_POSITION.next(2);
-
-                return;
-
-
-            } else if (iter.match('+')) {
-                if constexpr(lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_INCR, old_pos, "++");
-                }
-
-                if constexpr(not lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_INCR, old_pos);
-                }
-
-                CURRENT_POSITION.next(2);
-
-                return;
-
-
-            } else {
-                if constexpr(lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_PLUS, old_pos, "+");
-                }
-
-                if constexpr(not lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_PLUS, old_pos);
-                }
-
-                CURRENT_POSITION.next();
-
-                return;
-            }
-
-
-
-        case '<':
-            if (iter.match('=')) {
-                if constexpr(lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_LESS_EQ, old_pos, "<=");
-                }
-
-                if constexpr(not lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_LESS_EQ, old_pos);
-                }
-
-                CURRENT_POSITION.next(2);
-
-                return;
-
-
-            } else {
-                if constexpr(lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_LESS, old_pos, "<");
-                }
-
-                if constexpr(not lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_LESS, old_pos);
-                }
-
-                CURRENT_POSITION.next();
-
-                return;
-            }
-
-
-
-        case '>':
-            if (iter.match('=')) {
-                if constexpr(lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_MORE_EQ, old_pos, ">=");
-                }
-
-                if constexpr(not lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_MORE_EQ, old_pos);
-                }
-
-                CURRENT_POSITION.next(2);
-
-                return;
-
-
-            } else {
-                if constexpr(lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_MORE, old_pos, ">");
-                }
-
-                if constexpr(not lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_MORE, old_pos);
-                }
-
-                CURRENT_POSITION.next();
-
-                return;
-            }
-
-
-
-        case '-':
-            if (iter.match('=')) {
-                if constexpr(lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_MINUS_EQ, old_pos, "-=");
-                }
-
-                if constexpr(not lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_MINUS_EQ, old_pos);
-                }
-
-                CURRENT_POSITION.next(2);
-
-                return;
-
-
-            } else if (iter.match('-')) {
-                if constexpr(lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_DECR, old_pos, "--");
-                }
-
-                if constexpr(not lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_DECR, old_pos);
-                }
-
-                CURRENT_POSITION.next(2);
-
-                return;
-
-
-            } else if (iter.match('>')) {
-                if constexpr(lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_ARROW, old_pos, "->");
-                }
-
-                if constexpr(not lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_ARROW, old_pos);
-                }
-
-                CURRENT_POSITION.next(2);
-
-                return;
-
-
-            } else {
-                if constexpr(lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_MINUS, old_pos, "-");
-                }
-
-                if constexpr(not lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_MINUS, old_pos);
-                }
-
-                CURRENT_POSITION.next();
-
-                return;
-            }
-
-
-
-        case '*':
-            if (iter.match('=')) {
-                if constexpr(lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_MUL_EQ, old_pos, "*=");
-                }
-
-                if constexpr(not lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_MUL_EQ, old_pos);
-                }
-
-                CURRENT_POSITION.next(2);
-
-                return;
-
-
-            } else {
-                if constexpr(lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_MUL, old_pos, "*");
-                }
-
-                if constexpr(not lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_MUL, old_pos);
-                }
-
-                CURRENT_POSITION.next();
-
-                return;
-            }
-
-
-
-        case '\'':
-            if constexpr(lex::constant::PRINT_TOKENS) {
-                tokens.emplace(TYPE_OPERATOR_QUOTE, old_pos, "'");
-            }
-
-            if constexpr(not lex::constant::PRINT_TOKENS) {
-                tokens.emplace(TYPE_OPERATOR_QUOTE, old_pos);
-            }
-
+    if constexpr(lex::constant::PRINT_TOKENS) {
+        if (iter.match(':')) {
+            CURRENT_POSITION.next(2);
+            tokens.emplace(TYPE_DOUBLE_COLON, old_pos, "::");
+
+        } else {
+            tokens.emplace(TYPE_SINGLE_COLON, old_pos, ":");
             CURRENT_POSITION.next();
-
-            return;
-
+        }
 
 
-        case '^':
-            if constexpr(lex::constant::PRINT_TOKENS) {
-                tokens.emplace(TYPE_OPERATOR_RAISE, old_pos, "^");
-            }
+    } else {
+        if (iter.match(':')) {
+            tokens.emplace(TYPE_DOUBLE_COLON, old_pos);
+            CURRENT_POSITION.next(2);
 
-            if constexpr(not lex::constant::PRINT_TOKENS) {
-                tokens.emplace(TYPE_OPERATOR_RAISE, old_pos);
-            }
-
+        } else {
+            tokens.emplace(TYPE_SINGLE_COLON, old_pos);
             CURRENT_POSITION.next();
-
-            return;
-
-
-
-        case '|':
-            if (iter.match('>')) {
-                if constexpr(lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_PIPE, old_pos, "|>");
-                }
-
-                if constexpr(not lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_PIPE, old_pos);
-                }
-
-                CURRENT_POSITION.next(2);
-
-                return;
-            }
-
-            break;
-
-
-        case '/':
-            if (iter.match('/')) {
-                iter.next_while([] (auto& iter2, char c) {
-                    CURRENT_POSITION.next();
-                    return (c != '\n');
-                });
-
-                return;
-
-
-            } else if (iter.match('=')) {
-                if constexpr(lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_DIV_EQ, old_pos, "/=");
-                }
-
-                if constexpr(not lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_DIV_EQ, old_pos);
-                }
-
-                CURRENT_POSITION.next(2);
-
-                return;
-
-
-            } else {
-                if constexpr(lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_DIV, old_pos, "/");
-                }
-
-                if constexpr(not lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_DIV, old_pos);
-                }
-
-                CURRENT_POSITION.next();
-
-                return;
-            }
-
-
-
-        case '=':
-            if (iter.match('=')) {
-                if constexpr(lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_COMPARE, old_pos, "==");
-                }
-
-                if constexpr(not lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_COMPARE, old_pos);
-                }
-
-                CURRENT_POSITION.next(2);
-
-                return;
-
-            } else {
-                if constexpr(lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_ASSIGN, old_pos, "=");
-                }
-
-                if constexpr(not lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_OPERATOR_ASSIGN, old_pos);
-                }
-
-                CURRENT_POSITION.next();
-
-                return;
-            }
-
-
-
-        default:
-            throw lex::exception::Error("unknown operator '" + std::string{iter.ptr(), 1} + "'.");
-    }
-
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void whitespace_handler(StringIter& iter, Group& tokens) {
-    if constexpr(lex::constant::PRINT_TOKENS) {
-        const auto builder = iter.read_while([] (auto& iter2, char c) {
-            if (iter2.peek() == '\n')
-                CURRENT_POSITION.nextln();
-
-            else
-                CURRENT_POSITION.next();
-
-            return (static_cast<bool>(std::isspace(c)));
-        });
-
-        //tokens.emplace(TYPE_WHITESPACE, CURRENT_POSITION, builder);
-    }
-
-
-
-    if constexpr(not lex::constant::PRINT_TOKENS) {
-        iter.next_while([] (auto& iter2, char c) {
-            if (iter2.peek() == '\n')
-                CURRENT_POSITION.nextln();
-
-            else
-                CURRENT_POSITION.next();
-
-            return (static_cast<bool>(std::isspace(c)));
-        });
+        }
     }
 }
 
 
 
 
-
-
-
-
-void left_brace_handler(StringIter& iter, Group& tokens) {
-    if constexpr(lex::constant::PRINT_TOKENS) {
-        tokens.emplace(TYPE_BRACE_LEFT, CURRENT_POSITION, "{");
-    }
-
-    if constexpr(not lex::constant::PRINT_TOKENS) {
-        tokens.emplace(TYPE_BRACE_LEFT, CURRENT_POSITION);
-    }
-
-    CURRENT_POSITION.next();
-}
-
-
-void right_brace_handler(StringIter& iter, Group& tokens) {
-    if constexpr(lex::constant::PRINT_TOKENS) {
-        tokens.emplace(TYPE_BRACE_RIGHT, CURRENT_POSITION, "}");
-    }
-
-    if constexpr(not lex::constant::PRINT_TOKENS) {
-        tokens.emplace(TYPE_BRACE_RIGHT, CURRENT_POSITION);
-    }
-
-    CURRENT_POSITION.next();
-}
-
-
-
-
-
-
-void left_bracket_handler(StringIter& iter, Group& tokens) {
-    if constexpr(lex::constant::PRINT_TOKENS) {
-        tokens.emplace(TYPE_BRACKET_LEFT, CURRENT_POSITION, "[");
-    }
-
-    if constexpr(not lex::constant::PRINT_TOKENS) {
-        tokens.emplace(TYPE_BRACKET_LEFT, CURRENT_POSITION);
-    }
-
-    CURRENT_POSITION.next();
-}
-
-void right_bracket_handler(StringIter& iter, Group& tokens) {
-    if constexpr(lex::constant::PRINT_TOKENS) {
-        tokens.emplace(TYPE_BRACKET_RIGHT, CURRENT_POSITION, "]");
-    }
-
-    if constexpr(not lex::constant::PRINT_TOKENS) {
-        tokens.emplace(TYPE_BRACKET_RIGHT, CURRENT_POSITION);
-    }
-
-    CURRENT_POSITION.next();
-}
-
-
-
-
-
-
-
-void left_paren_handler(StringIter& iter, Group& tokens) {
-    if constexpr(lex::constant::PRINT_TOKENS) {
-        tokens.emplace(TYPE_PAREN_LEFT, CURRENT_POSITION, "(");
-    }
-
-    if constexpr(not lex::constant::PRINT_TOKENS) {
-        tokens.emplace(TYPE_PAREN_LEFT, CURRENT_POSITION);
-    }
-
-    CURRENT_POSITION.next();
-}
-
-void right_paren_handler(StringIter& iter, Group& tokens) {
-    if constexpr(lex::constant::PRINT_TOKENS) {
-        tokens.emplace(TYPE_PAREN_RIGHT, CURRENT_POSITION, ")");
-    }
-
-    if constexpr(not lex::constant::PRINT_TOKENS) {
-        tokens.emplace(TYPE_PAREN_RIGHT, CURRENT_POSITION);
-    }
-
-    CURRENT_POSITION.next();
-}
-
-
-
-
-
-
-void seperator_handler(StringIter& iter, Group& tokens) {
-    const auto old_pos = CURRENT_POSITION;
-
-    switch (iter.peek()) {
-        case ':':
-            if (iter.match(':')) {
-                if constexpr(lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_FUNC_DEF, old_pos, "::");
-                }
-
-                if constexpr(not lex::constant::PRINT_TOKENS) {
-                    tokens.emplace(TYPE_FUNC_DEF, old_pos);
-                }
-
-                CURRENT_POSITION.next(2);
-
-                return;
-            }
-
-        default:
-            break;
-    }
-
-    CURRENT_POSITION.next();
-
-    tokens.emplace(TYPE_SEPERATOR, old_pos, std::string_view{iter.ptr(), 1});
-}
-
-
-
-
-
-void comment_handler(StringIter& iter, Group&) {
-    iter.next_while([] (auto& iter2, char c) {
+void on_comment(StringIter& iter, Group&) {
+    iter.next_while([] (auto&, char c) {
         CURRENT_POSITION.next();
         return (c != '\n');
     });

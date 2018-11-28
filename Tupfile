@@ -1,5 +1,5 @@
 CC=g++
-WFLAGS=-Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-overflow=5 -Wswitch-default -Wundef -Wno-unused
+WFLAGS=-Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-overflow=5 -Wundef -Wno-unused
 CFLAGS=--std=c++17 -Ofast -march=native -funroll-loops -m64
 LFLAGS=-flto
 INCLUDE=-I src/ -I modules/
@@ -12,7 +12,6 @@ TARGET=lexer
                                            \
     main.cpp                               \
     src/lexer/*.cpp                        \
-    src/stringiter/*.cpp                   \
                                            \
 |> $(CC) $(WFLAGS) $(CFLAGS) $(INCLUDE) -c %f -o %o  \
 |> $(BUILD_DIR)/%B.o
