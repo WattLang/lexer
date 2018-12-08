@@ -390,5 +390,8 @@ int main(int, char const*[]) {
     }
 
 
+    ws::module::printer.imbue(std::locale("C"));
+
+
     return 0;
 }

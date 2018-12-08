@@ -9,7 +9,7 @@
 
 
 namespace ws::lexer {
-    struct Rules {
+    class Rules {
         using entries_t = std::array<Rule, 256>;
         using size_type = entries_t::size_type;
 
@@ -18,50 +18,57 @@ namespace ws::lexer {
         using init_list = std::initializer_list<init_pair>;
 
 
-        entries_t entries = {{nullptr}};
+        private:
+
+            entries_t entries = {{nullptr}};
 
 
-        // Map initializer list onto entries.
-        constexpr Rules(const init_list& entries_) {
-            for (const auto& x: entries_) {
-                const auto& [chars, rule] = x;
+        public:
+            // Map initializer list onto entries.
+            constexpr Rules(const init_list& entries_) {
+                for (const auto& x: entries_) {
+                    const auto& [chars, rule] = x;
 
-                size_type i = 0;
+                    size_type i = 0;
 
-                for (auto p = chars[i]; p != '\0'; p = chars[i++])
-                    _at(static_cast<size_type>(p)) = rule;
+                    for (auto p = chars[i]; p != '\0'; p = chars[i++])
+                        _at(static_cast<size_type>(p)) = rule;
+                }
             }
-        }
 
 
-        // Iterators.
-        constexpr auto begin() const noexcept { return entries.begin(); }
-        constexpr auto end()   const noexcept { return entries.end();   }
+            // Iterators.
+            constexpr auto begin() const noexcept { return entries.begin(); }
+            constexpr auto end()   const noexcept { return entries.end();   }
 
 
         // Element access.
-        constexpr Rule& _at(size_type i) {
-            return entries.at(i);
-        }
+        private:
+
+            constexpr Rule& _at(size_type i) {
+                return entries.at(i);
+            }
 
 
-        constexpr const Rule& at(size_type i) const {
-            return entries.at(i);
-        }
+        public:
+
+            constexpr const Rule& at(size_type i) const {
+                return entries.at(i);
+            }
 
 
-        constexpr const Rule& operator[](size_type i) const {
-            return entries[i];
-        }
+            constexpr const Rule& operator[](size_type i) const {
+                return entries[i];
+            }
 
 
-        constexpr const Rule& at(char i) const {
-            return entries.at(static_cast<size_type>(i));
-        }
+            constexpr const Rule& at(char i) const {
+                return entries.at(static_cast<size_type>(i));
+            }
 
 
-        constexpr const Rule& operator[](char i) const {
-            return at(i);
-        }
+            constexpr const Rule& operator[](char i) const {
+                return at(i);
+            }
     };
 }

@@ -1,5 +1,12 @@
 #pragma once
 
+
+/*
+    ABANDON ALL HOPE, YE WHO ENTER HERE.
+*/
+
+
+
 using Group      = lex::Group;
 using StringIter = lex::StringIter;
 
@@ -171,14 +178,14 @@ void on_whitespace(StringIter& iter, Group& tokens) {
 
 
 
-STATELESS_HANDLER(on_left_paren,    TYPE_PAREN_LEFT, "(")
-STATELESS_HANDLER(on_right_paren,   TYPE_PAREN_LEFT, ")")
+STATELESS_HANDLER(on_left_paren,    TYPE_PAREN_LEFT,  "(")
+STATELESS_HANDLER(on_right_paren,   TYPE_PAREN_RIGHT, ")")
 
-STATELESS_HANDLER(on_left_brace,    TYPE_PAREN_LEFT, "[")
-STATELESS_HANDLER(on_right_brace,   TYPE_PAREN_LEFT, "]")
+STATELESS_HANDLER(on_left_brace,    TYPE_PAREN_LEFT,  "[")
+STATELESS_HANDLER(on_right_brace,   TYPE_PAREN_RIGHT, "]")
 
-STATELESS_HANDLER(on_left_bracket,  TYPE_PAREN_LEFT, "{")
-STATELESS_HANDLER(on_right_bracket, TYPE_PAREN_LEFT, "}")
+STATELESS_HANDLER(on_left_bracket,  TYPE_PAREN_LEFT,  "{")
+STATELESS_HANDLER(on_right_bracket, TYPE_PAREN_RIGHT, "}")
 
 
 STATELESS_HANDLER(on_comma,       TYPE_COMMA,     ",")
@@ -229,7 +236,7 @@ constexpr std::pair<std::string_view, ws::token::Type> keyw[] = {
 };
 
 
-void on_ident(StringIter& iter, Group& tokens) {
+/*void on_ident(StringIter& iter, Group& tokens) {
     const auto old_pos = CURRENT_POSITION;
 
     const auto builder = iter.read_while([] (auto&, char c) {
@@ -254,11 +261,371 @@ void on_ident(StringIter& iter, Group& tokens) {
     }
 
     tokens.emplace(TYPE_IDENTIFIER, old_pos, builder);
-};
+};*/
 
 
 
 
+#define HANDLE_IDENT(type, str) \
+    if constexpr(lex::constant::PRINT_TOKENS) { \
+        tokens.emplace(type, old_pos, str); \
+    } \
+ \
+    if constexpr(not lex::constant::PRINT_TOKENS) { \
+        tokens.emplace(type, old_pos); \
+    } \
+ \
+    return;
+
+
+
+#define BUILD_IDENT() \
+    iter.read_while([] (auto&, char c) { \
+        CURRENT_POSITION.next(); \
+        return ident_table[c]; \
+    });
+
+
+void on_ident(StringIter& iter, Group& tokens) {
+    const auto old_pos = CURRENT_POSITION;
+
+
+    std::string_view builder;
+    int so_far = 0;
+
+
+    switch (iter.peek()) {
+        case 'v':
+            so_far++;
+
+            if (iter.match('a')) {
+                so_far++;
+
+                if (iter.match('r')) {
+                    CURRENT_POSITION.next(3);
+                    HANDLE_IDENT(TYPE_KEYWORD_VAR, "var")
+                }
+
+                break;
+            }
+
+            break;
+
+
+        case 's':
+            so_far++;
+
+            if (iter.match('t')) {
+                so_far++;
+
+                if (iter.match('r')) {
+                    so_far++;
+
+                    if (iter.match('u')) {
+                        so_far++;
+
+                        if (iter.match('c')) {
+                            so_far++;
+
+                            if (iter.match('t')) {
+                                CURRENT_POSITION.next(6);
+                                HANDLE_IDENT(TYPE_KEYWORD_STRUCT, "struct")
+                            }
+
+                            break;
+                        }
+
+                        break;
+                    }
+
+                    break;
+                }
+
+                break;
+
+            } else if (iter.match('e')) {
+                so_far++;
+
+                if (iter.match('l')) {
+                    so_far++;
+
+                    if (iter.match('f')) {
+                        CURRENT_POSITION.next(4);
+                        HANDLE_IDENT(TYPE_KEYWORD_SELF, "self")
+                    }
+
+                    break;
+                }
+
+                break;
+            }
+
+            break;
+
+
+        case 'i':
+            so_far++;
+
+            if (iter.match('f')) {
+                CURRENT_POSITION.next(2);
+                HANDLE_IDENT(TYPE_KEYWORD_IF, "if")
+            }
+
+            break;
+
+
+        case 'e':
+            so_far++;
+
+            if (iter.match('l')) {
+                so_far++;
+
+                if (iter.match('s')) {
+                    so_far++;
+
+                    if (iter.match('e')) {
+                        CURRENT_POSITION.next(4);
+                        HANDLE_IDENT(TYPE_KEYWORD_ELSE, "else")
+                    }
+
+                    break;
+                }
+
+                break;
+            }
+
+            break;
+
+
+        case 'f':
+            so_far++;
+
+            if (iter.match('o')) {
+                so_far++;
+
+                if (iter.match('r')) {
+                    CURRENT_POSITION.next(3);
+                    HANDLE_IDENT(TYPE_KEYWORD_FOR, "for")
+                }
+
+                break;
+
+            } else if (iter.match('a')) {
+                so_far++;
+
+                if (iter.match('l')) {
+                    so_far++;
+
+                    if (iter.match('s')) {
+                        so_far++;
+
+                        if (iter.match('e')) {
+                            CURRENT_POSITION.next(5);
+                            HANDLE_IDENT(TYPE_KEYWORD_FALSE, "false")
+                        }
+
+                        break;
+                    }
+
+                    break;
+                }
+
+                break;
+            }
+
+            break;
+
+
+        case 'w':
+            so_far++;
+
+            if (iter.match('h')) {
+                so_far++;
+
+                if (iter.match('i')) {
+                    so_far++;
+
+                    if (iter.match('l')) {
+                        so_far++;
+
+                        if (iter.match('e')) {
+                            CURRENT_POSITION.next(5);
+                            HANDLE_IDENT(TYPE_KEYWORD_WHILE, "while")
+                        }
+
+                        break;
+                    }
+
+                    break;
+                }
+
+                break;
+            }
+
+            break;
+
+
+        case 'b':
+            so_far++;
+
+            if (iter.match('r')) {
+                so_far++;
+
+                if (iter.match('e')) {
+                    so_far++;
+
+                    if (iter.match('a')) {
+                        so_far++;
+
+                        if (iter.match('k')) {
+                            CURRENT_POSITION.next(5);
+                            HANDLE_IDENT(TYPE_KEYWORD_BREAK, "break")
+                        }
+
+                        break;
+                    }
+
+                    break;
+                }
+
+                break;
+            }
+
+            break;
+
+
+        case 'c':
+            so_far++;
+
+            if (iter.match('o')) {
+                so_far++;
+
+                if (iter.match('n')) {
+                    so_far++;
+
+                    if (iter.match('t')) {
+                        so_far++;
+
+                        if (iter.match('i')) {
+                            so_far++;
+
+                            if (iter.match('n')) {
+                                so_far++;
+
+                                if (iter.match('u')) {
+                                    so_far++;
+
+                                    if (iter.match('e')) {
+                                        CURRENT_POSITION.next(8);
+                                        HANDLE_IDENT(TYPE_KEYWORD_CONTINUE, "continue")
+                                    }
+
+                                    break;
+                                }
+
+                                break;
+                            }
+
+                            break;
+                        }
+
+                        break;
+                    }
+
+                    break;
+                }
+
+                break;
+            }
+
+            break;
+
+
+        case 'r':
+            so_far++;
+
+            if (iter.match('e')) {
+                so_far++;
+
+                if (iter.match('t')) {
+                    so_far++;
+
+                    if (iter.match('u')) {
+                        so_far++;
+
+                        if (iter.match('r')) {
+                            so_far++;
+
+                            if (iter.match('n')) {
+                                CURRENT_POSITION.next(6);
+                                HANDLE_IDENT(TYPE_KEYWORD_RETURN, "return")
+                            }
+
+                            break;
+                        }
+
+                        break;
+                    }
+
+                    break;
+                }
+
+                break;
+            }
+
+            break;
+
+
+        case 'n':
+            so_far++;
+
+            if (iter.match('i')) {
+                so_far++;
+
+                if (iter.match('l')) {
+                    CURRENT_POSITION.next(3);
+                    HANDLE_IDENT(TYPE_KEYWORD_NIL, "nil")
+                }
+
+                break;
+            }
+
+            break;
+
+
+        case 't':
+            so_far++;
+
+            if (iter.match('r')) {
+                so_far++;
+
+                if (iter.match('u')) {
+                    so_far++;
+
+                    if (iter.match('e')) {
+                        CURRENT_POSITION.next(4);
+                        HANDLE_IDENT(TYPE_KEYWORD_TRUE, "true")
+                    }
+
+                    break;
+                }
+
+                break;
+            }
+
+            break;
+
+
+        default: break;
+    }
+
+
+    iter.decr(so_far);
+
+    builder = BUILD_IDENT()
+
+    tokens.emplace(TYPE_IDENTIFIER, old_pos, builder);
+}
 
 
 
