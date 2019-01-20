@@ -37,5 +37,5 @@ testing/
 .tup/
 callgrind.out.*
 cachegrind.out.*
-data/
+# data/
 notes
