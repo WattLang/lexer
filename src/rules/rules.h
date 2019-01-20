@@ -6,6 +6,7 @@
 #include <utility>
 
 #include <alias.h>
+#include <exception.h>
 
 
 namespace ws::lexer {
@@ -25,7 +26,14 @@ namespace ws::lexer {
 
         public:
             // Map initializer list onto entries.
-            constexpr Rules(const init_list& entries_) {
+            constexpr Rules(
+                const init_list& entries_,
+                const Rule r
+            ) {
+                for (auto& x: entries)
+                    x = r;
+
+
                 for (const auto& x: entries_) {
                     const auto& [chars, rule] = x;
 

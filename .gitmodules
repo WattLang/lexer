@@ -1,6 +1,6 @@
-[submodule "modules/module"]
-	path = modules/module
-	url = https://github.com/WotScript/module
-[submodule "modules/cxxopts"]
-	path = modules/cxxopts
-	url = https://github.com/jarro2783/cxxopts
+[submodule "modules/logger"]
+	path = modules/logger
+	url = https://github.com/WattLang/logger
+[submodule "modules/structures"]
+	path = modules/structures
+	url = https://github.com/WattLang/structures

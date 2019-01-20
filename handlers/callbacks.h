@@ -1,6 +1,8 @@
 #pragma once
 
 
+//#include "modules/module/trie.h"
+
 /*
     ABANDON ALL HOPE, YE WHO ENTER HERE.
 */
@@ -9,8 +11,6 @@
 
 using Group      = lex::Group;
 using StringIter = lex::StringIter;
-
-lex::Position CURRENT_POSITION;
 
 
 
@@ -153,10 +153,10 @@ constexpr const char* token_strings[] = {
         const auto old_pos = CURRENT_POSITION; \
      \
         if constexpr(lex::constant::PRINT_TOKENS) { \
-            tokens.emplace(type, old_pos, str); \
+            tokens.emplace_back(type, old_pos, str); \
      \
         } else { \
-            tokens.emplace(type, old_pos); \
+            tokens.emplace_back(type, old_pos); \
         } \
      \
         CURRENT_POSITION.next(); \
@@ -236,7 +236,61 @@ constexpr std::pair<std::string_view, ws::token::Type> keyw[] = {
 };
 
 
-/*void on_ident(StringIter& iter, Group& tokens) {
+/*const ws::structure::Trie<ws::token::Type> trie = {
+    {"var",      TYPE_KEYWORD_VAR},
+    {"struct",   TYPE_KEYWORD_STRUCT},
+    {"self",     TYPE_KEYWORD_SELF},
+    {"if",       TYPE_KEYWORD_IF},
+    {"else",     TYPE_KEYWORD_ELSE},
+    {"for",      TYPE_KEYWORD_FOR},
+    {"while",    TYPE_KEYWORD_WHILE},
+    {"break",    TYPE_KEYWORD_BREAK},
+    {"continue", TYPE_KEYWORD_CONTINUE},
+    {"return",   TYPE_KEYWORD_RETURN},
+    {"nil",      TYPE_KEYWORD_NIL},
+    {"true",     TYPE_KEYWORD_TRUE},
+    {"false",    TYPE_KEYWORD_FALSE}
+};
+
+
+void on_ident2(StringIter& iter, Group& tokens) {
+    const auto old_pos = CURRENT_POSITION;
+
+
+    bool is_keyw = true;
+    std::optional<ws::token::Type> tok_type = TYPE_KEYWORD;
+
+
+
+    const auto builder = iter.read_while([&trie, &is_keyw, &tok_type] (
+        auto&, char c, std::string_view current
+    ) {
+        if (not trie.partial(current))
+            is_keyw = false;
+
+        else
+            tok_type = trie.get(current).value_or(TYPE_KEYWORD);
+
+        CURRENT_POSITION.next();
+        return ident_table[c];
+    });
+
+
+
+    if (is_keyw) {
+        if constexpr(lex::constant::PRINT_TOKENS)
+            tokens.emplace_back(tok_type.value_or(TYPE_KEYWORD), old_pos, builder);
+
+        else
+            tokens.emplace_back(tok_type.value_or(TYPE_KEYWORD), old_pos);
+
+    } else {
+        tokens.emplace_back(TYPE_IDENTIFIER, old_pos, builder);
+    }
+};*/
+
+
+void on_ident2(StringIter& iter, Group& tokens) {
     const auto old_pos = CURRENT_POSITION;
 
     const auto builder = iter.read_while([] (auto&, char c) {
@@ -251,28 +305,28 @@ constexpr std::pair<std::string_view, ws::token::Type> keyw[] = {
             const auto& [str, type] = *it;
 
             if constexpr(lex::constant::PRINT_TOKENS)
-                tokens.emplace(type, old_pos, builder);
+                tokens.emplace_back(type, old_pos, builder);
 
             else
-                tokens.emplace(type, old_pos);
+                tokens.emplace_back(type, old_pos);
 
             return;
         }
     }
 
-    tokens.emplace(TYPE_IDENTIFIER, old_pos, builder);
-};*/
+    tokens.emplace_back(TYPE_IDENTIFIER, old_pos, builder);
+};
 
 
 
 
 #define HANDLE_IDENT(type, str) \
     if constexpr(lex::constant::PRINT_TOKENS) { \
-        tokens.emplace(type, old_pos, str); \
+        tokens.emplace_back(type, old_pos, str); \
     } \
  \
     if constexpr(not lex::constant::PRINT_TOKENS) { \
-        tokens.emplace(type, old_pos); \
+        tokens.emplace_back(type, old_pos); \
     } \
  \
     return;
@@ -624,7 +678,7 @@ void on_ident(StringIter& iter, Group& tokens) {
 
     builder = BUILD_IDENT()
 
-    tokens.emplace(TYPE_IDENTIFIER, old_pos, builder);
+    tokens.emplace_back(TYPE_IDENTIFIER, old_pos, builder);
 }
 
 
@@ -687,10 +741,10 @@ void on_op(StringIter& iter, Group& tokens) {
             const auto& [str, type] = *it;
 
             if constexpr(lex::constant::PRINT_TOKENS)
-                tokens.emplace(type, old_pos, op);
+                tokens.emplace_back(type, old_pos, op);
 
             else
-                tokens.emplace(type, old_pos);
+                tokens.emplace_back(type, old_pos);
 
             return;
         }
@@ -721,11 +775,11 @@ void on_op(StringIter& iter, Group& tokens) {
 
 #define HANDLE_OP(type, str, inc) \
     if constexpr(lex::constant::PRINT_TOKENS) { \
-        tokens.emplace(type, old_pos, str); \
+        tokens.emplace_back(type, old_pos, str); \
     } \
  \
     if constexpr(not lex::constant::PRINT_TOKENS) { \
-        tokens.emplace(type, old_pos); \
+        tokens.emplace_back(type, old_pos); \
     } \
  \
     CURRENT_POSITION.next(inc); \
@@ -856,7 +910,7 @@ void on_number(StringIter& iter, Group& tokens) {
         return num_table[c];
     });
 
-    tokens.emplace(TYPE_LITERAL_FLOAT, old_pos, builder);
+    tokens.emplace_back(TYPE_LITERAL_FLOAT, old_pos, builder);
 };
 
 
@@ -902,7 +956,7 @@ void on_string(StringIter& iter, Group& tokens) {
 
     iter.incr();
     CURRENT_POSITION.next(2);
-    tokens.emplace(TYPE_STRING, old_pos, builder);
+    tokens.emplace_back(TYPE_STRING, old_pos, builder);
 };
 
 
@@ -921,21 +975,21 @@ void on_colon(StringIter& iter, Group& tokens) {
     if constexpr(lex::constant::PRINT_TOKENS) {
         if (iter.match(':')) {
             CURRENT_POSITION.next(2);
-            tokens.emplace(TYPE_DOUBLE_COLON, old_pos, "::");
+            tokens.emplace_back(TYPE_DOUBLE_COLON, old_pos, "::");
 
         } else {
-            tokens.emplace(TYPE_SINGLE_COLON, old_pos, ":");
+            tokens.emplace_back(TYPE_SINGLE_COLON, old_pos, ":");
             CURRENT_POSITION.next();
         }
 
 
     } else {
         if (iter.match(':')) {
-            tokens.emplace(TYPE_DOUBLE_COLON, old_pos);
+            tokens.emplace_back(TYPE_DOUBLE_COLON, old_pos);
             CURRENT_POSITION.next(2);
 
         } else {
-            tokens.emplace(TYPE_SINGLE_COLON, old_pos);
+            tokens.emplace_back(TYPE_SINGLE_COLON, old_pos);
             CURRENT_POSITION.next();
         }
     }

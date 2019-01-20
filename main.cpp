@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <map>
 
-#include <libs/module.h>
+#include <libs/logger.h>
 #include <constant.h>
 #include <stringiter/stringiter.h>
 #include <rules/rules.h>
@@ -20,20 +20,80 @@
 
 namespace lex = ws::lexer;
 
-#include "callbacks.h"
+
+lex::Position CURRENT_POSITION;
+
+
+void SHOW_MSG(std::string_view msg, bool show_pos =	true) {
+    const auto& [line, column] = CURRENT_POSITION;
+
+
+    if (show_pos) {
+        ws::module::print("\t┌─");
+
+        ws::module::println(
+            " at [ ",
+            ws::module::colour::fg::bright::yellow,
+            ws::module::style::bold,
+            line, ": ", column,
+            ws::module::style::reset,
+            " ]"
+        );
+    }
+
+    ws::module::println(
+        "\t└> ", ws::module::style::bold, msg
+    );
+};
+
+
+
+void SHOW_ERROR(std::string_view msg, bool show_pos = true) {
+    ws::module::errorln_h("Error!");
+    SHOW_MSG(msg, show_pos);
+};
+
+void SHOW_INTERNAL_ERROR(std::string_view msg, bool show_pos = true) {
+    ws::module::errorln_h("Internal Error!");
+    SHOW_MSG(msg, show_pos);
+};
+
+void SHOW_NOTICE(std::string_view msg, bool show_pos = true) {
+    ws::module::warnln_h("Warning!");
+    SHOW_MSG(msg, show_pos);
+};
+
+void SHOW_WARNING(std::string_view msg, bool show_pos = true) {
+    ws::module::warnln_h("Warning!");
+    SHOW_MSG(msg, show_pos);
+};
+
+
+
+#include "handlers/callbacks.h"
 
 
 
 
 
-constexpr lex::Rules handlers = {
+
+void default_rule(lex::StringIter& iter, lex::Group&) {
+    const auto& [line, column] = CURRENT_POSITION;
+
+    throw lex::exception::InternalError(
+        "unexpected character '" + std::string{iter.ptr(), 1} + "' @ line " + std::to_string(line) + ", column " + std::to_string(column) + "."
+    );
+}
+
+
+constexpr lex::Rules handlers({
     {"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_", on_ident},
 
     {" \f\r\t\v", on_whitespace},
     {"\n", on_newline},
 
     {"0123456789", on_number},
-    {"+-*/=<>", on_op},
+    {"+-*/=<>~!", on_op},
 
     {":", on_colon},
     {";", on_semicolon},
@@ -50,7 +110,12 @@ constexpr lex::Rules handlers = {
 
     {"{", on_left_bracket},
     {"}", on_right_bracket}
-};
+}, default_rule);
+
+
+
+
+
 
 
 
@@ -70,10 +135,16 @@ int main(int, char const*[]) {
     const auto start_recv = std::chrono::high_resolution_clock::now();
 
     auto data = ws::module::receive_all();
+    auto input = std::string_view{data};
+
+    lex::StringIter iter(input);
     lex::Group tokens;
 
+    tokens.reserve(data.size() / lex::constant::RATIO);
+
+
     if (data.empty()) {
-        ws::module::warnln_em("stream is empty.", " (make sure you pipe some input into the program)");
+        SHOW_WARNING("input stream is empty.", false);
 
         return 1;
     }
@@ -82,18 +153,22 @@ int main(int, char const*[]) {
 
 
 
+    bool error_encountered = false;
 
 
-
-    // Run tokenizer.
+    // Run lexer.
     const auto start_lexer = std::chrono::high_resolution_clock::now();
 
     try {
-        tokens = lex::lexer(handlers, data);
+        lex::lexer(handlers, iter, tokens);
 
-    } catch (const lex::exception::Fatal&) {
-        ws::module::errorln("unrecoverable error!");
-        return 1;
+    } catch (const lex::exception::Error& e) {
+        SHOW_ERROR(e.get_msg());
+        error_encountered = true;
+
+    } catch (const lex::exception::InternalError& e) {
+        SHOW_INTERNAL_ERROR(e.get_msg());
+        error_encountered = true;
     }
 
     const auto end_lexer = std::chrono::high_resolution_clock::now();
@@ -387,7 +462,13 @@ int main(int, char const*[]) {
         ws::module::noticeln("Capacity   => ", tokens.capacity());
         ws::module::noticeln("Difference => ", tokens.capacity() - tokens.size());
         ws::module::print_lines(1);
+
     }
+
+
+    if (not error_encountered)
+        ws::module::successln_h("success!");
+
 
 
     ws::module::printer.imbue(std::locale("C"));

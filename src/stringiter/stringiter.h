@@ -3,7 +3,7 @@
 
 #include <string_view>
 #include <alias.h>
-#include <libs/module.h>
+#include <libs/logger.h>
 
 
 namespace ws::lexer {
@@ -45,7 +45,6 @@ namespace ws::lexer {
 
             // View characters.
             char peek(int i = 0) const noexcept { return *(current + i); }
-            //char peek()      const noexcept { return *(current);     }
 
 
 
@@ -73,7 +72,6 @@ namespace ws::lexer {
 
             // Skip characters until predicate fails.
             void next_while(WhilePred pred) {
-                // Skip characters until predicate fails.
                 while (pred(*this, peek(1)))
                     incr();
             }
@@ -84,8 +82,6 @@ namespace ws::lexer {
                 ptr_type begin = current;
                 std::string::size_type length = 1;
 
-
-                // Consume characters until predicate fails.
                 for (; pred(*this, peek(1)); ++length)
                     incr();
 
