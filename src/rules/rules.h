@@ -5,8 +5,8 @@
 #include <initializer_list>
 #include <utility>
 
-#include <alias.h>
-#include <exception.h>
+#include "../alias.h"
+#include "../exception.h"
 
 
 namespace ws::lexer {

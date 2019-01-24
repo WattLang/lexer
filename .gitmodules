@@ -1,9 +1,3 @@
-[submodule "modules/logger"]
-	path = modules/logger
-	url = https://github.com/WattLang/logger
 [submodule "modules/structures"]
 	path = modules/structures
 	url = https://github.com/WattLang/structures
-[submodule "modules/data"]
-	path = modules/data
-	url = https://github.com/WattLang/data
