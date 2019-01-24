@@ -30,12 +30,3 @@
 *.exe
 *.out
 *.app
-
-
-build/
-testing/
-.tup/
-callgrind.out.*
-cachegrind.out.*
-data/
-notes

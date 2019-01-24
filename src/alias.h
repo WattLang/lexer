@@ -4,7 +4,7 @@
 #include <vector>
 #include <string_view>
 #include <functional>
-#include <libs/token.h>
+#include "libs/token.h"
 
 
 namespace ws::lexer {
