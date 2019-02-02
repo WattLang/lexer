@@ -15,26 +15,8 @@
 namespace ws::lexer {
 
 	template <typename T>
-    std::optional<Token> get_next_token(
-        const Rules& rules,
-        ws::lexer::StringIter& iter,
-        T& tokens
-    ) {
-        auto size = tokens.size();
-
-        rules.at(iter.peek()) (iter, tokens);
-        iter.incr();
-
-        if (size != tokens.size())
-            return tokens.back();
-
-        return {};
-    }
-
-
-	template <typename T>
     void consume(
-        const Rules& rules,
+        const Rules<typename T::value_type>& rules,
         ws::lexer::StringIter& iter,
         T& tokens
     ) {
@@ -45,7 +27,7 @@ namespace ws::lexer {
 
 	template <typename T>
     void lexer(
-        const Rules& rules,
+        const Rules<typename T::value_type>& rules,
         ws::lexer::StringIter& iter,
         T& tokens
     ) {

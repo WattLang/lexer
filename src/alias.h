@@ -5,6 +5,7 @@
 #include <string_view>
 #include <functional>
 // #include "libs/token.h"
+#include "libs/position.h"
 
 
 namespace ws::lexer {
@@ -14,9 +15,11 @@ namespace ws::lexer {
 
 	template <typename T>
 	using Group    = std::vector<T>;
-    using Position = ws::token::Position;
+    using Position = ws::structure::Position;
 
 
     using WhilePred = bool(*const)(StringIter&, const char);
-    using Rule = void(*)(StringIter&, Group&);
+
+	template <typename T>
+	using Rule = void(*)(StringIter&, Group<T>&);
 }
