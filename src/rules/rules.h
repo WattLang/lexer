@@ -10,13 +10,14 @@
 
 
 namespace ws::lexer {
-    class Rules {
-        using entries_t = std::array<Rule, 256>;
-        using size_type = entries_t::size_type;
+	template <typename T>
+	class Rules {
+        using entries_t = std::array<Rule<T>, 256>;
+        using size_type = typename entries_t::size_type;
 
 
-        using init_pair = std::pair<const char*, const Rule>;
-        using init_list = std::initializer_list<init_pair>;
+        using init_pair = typename std::pair<const char*, const Rule<T>>;
+        using init_list = typename std::initializer_list<init_pair>;
 
 
         private:
@@ -28,7 +29,7 @@ namespace ws::lexer {
             // Map initializer list onto entries.
             constexpr Rules(
                 const init_list& entries_,
-                const Rule r
+                const Rule<T> r
             ) {
                 for (auto& x: entries)
                     x = r;
@@ -53,29 +54,29 @@ namespace ws::lexer {
         // Element access.
         private:
 
-            constexpr Rule& _at(size_type i) {
+            constexpr Rule<T>& _at(size_type i) {
                 return entries.at(i);
             }
 
 
         public:
 
-            constexpr const Rule& at(size_type i) const {
+            constexpr const Rule<T>& at(size_type i) const {
                 return entries.at(i);
             }
 
 
-            constexpr const Rule& operator[](size_type i) const {
+            constexpr const Rule<T>& operator[](size_type i) const {
                 return entries[i];
             }
 
 
-            constexpr const Rule& at(char i) const {
+            constexpr const Rule<T>& at(char i) const {
                 return entries.at(static_cast<size_type>(i));
             }
 
 
-            constexpr const Rule& operator[](char i) const {
+            constexpr const Rule<T>& operator[](char i) const {
                 return at(i);
             }
     };
