@@ -72,7 +72,7 @@ namespace ws::lexer {
 
             // Skip characters until predicate fails.
             void next_while(WhilePred pred) {
-                while (pred(*this, peek(1)))
+                while (pred(*this, peek(1)) and not is_end())
                     incr();
             }
 
@@ -82,8 +82,10 @@ namespace ws::lexer {
                 ptr_type begin = current;
                 std::string::size_type length = 1;
 
-                for (; pred(*this, peek(1)); ++length)
+                while (pred(*this, peek(1)) and not is_end()) {
                     incr();
+                	++length;
+                }
 
                 return { begin, length };
             }
