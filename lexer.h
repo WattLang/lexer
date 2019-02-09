@@ -1,4 +1,5 @@
-#include "src/core.h"
+#include "src/exception.h"
+#include "src/alias.h"
 
 // headers
 #include "src/rules/rules.h"
