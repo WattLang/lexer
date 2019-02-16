@@ -4,14 +4,13 @@
 #include <vector>
 #include <string_view>
 #include <functional>
-#include "libs/position.h"
 
 
 namespace ws::lexer {
 	struct StringIter;
 
 	template <typename T>
-	using Group	   = std::vector<T>;
+	using Group	= std::vector<T>;
 
 	using WhilePred = bool(*const)(StringIter&, const char);
 
