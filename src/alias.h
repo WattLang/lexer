@@ -12,7 +12,6 @@ namespace ws::lexer {
 
 	template <typename T>
 	using Group	   = std::vector<T>;
-	using Position = ws::structure::Position;
 
 	using WhilePred = bool(*const)(StringIter&, const char);
 
