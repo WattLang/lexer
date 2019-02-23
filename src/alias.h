@@ -7,7 +7,7 @@
 
 
 namespace ws::lexer {
-	struct StringIter;
+	class StringIter;
 
 	template <typename T>
 	using Group	= std::vector<T>;
