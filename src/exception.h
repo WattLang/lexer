@@ -5,7 +5,7 @@
 #include <stdexcept>
 
 
-#define WS_LEXER_NEW_EXCEPTION_TYPE(name, default_msg) \
+#define WATT_LEXER_NEW_EXCEPTION_TYPE(name, default_msg) \
 	class name: public std::runtime_error { \
 		private: \
 			std::string msg; \
@@ -26,11 +26,11 @@
 	};
 
 
-namespace ws::lexer::exception {
-	WS_LEXER_NEW_EXCEPTION_TYPE(Notice, "Lexical notice!")
-	WS_LEXER_NEW_EXCEPTION_TYPE(Warn,   "Lexical warning!")
-	WS_LEXER_NEW_EXCEPTION_TYPE(Error,  "Lexical error!")
+namespace watt::lexer::exception {
+	WATT_LEXER_NEW_EXCEPTION_TYPE(Notice, "Lexical notice!")
+	WATT_LEXER_NEW_EXCEPTION_TYPE(Warn,   "Lexical warning!")
+	WATT_LEXER_NEW_EXCEPTION_TYPE(Error,  "Lexical error!")
 }
 
 
-#undef WS_LEXER_NEW_EXCEPTION_TYPE
+#undef WATT_LEXER_NEW_EXCEPTION_TYPE

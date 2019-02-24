@@ -6,7 +6,7 @@
 #include <functional>
 
 
-namespace ws::lexer {
+namespace watt::lexer {
 	class StringIter;
 
 	template <typename T>
