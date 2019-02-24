@@ -9,7 +9,7 @@
 #include "../exception.h"
 
 
-namespace ws::lexer {
+namespace watt::lexer {
 	template <typename T>
 	class Rules {
 		using entries_t = std::array<Rule<T>, 256>;

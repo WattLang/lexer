@@ -6,8 +6,8 @@
 #include <functional>
 
 
-namespace ws::lexer {
-	struct StringIter;
+namespace watt::lexer {
+	class StringIter;
 
 	template <typename T>
 	using Group	= std::vector<T>;

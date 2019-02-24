@@ -5,7 +5,7 @@
 #include "../alias.h"
 
 
-namespace ws::lexer {
+namespace watt::lexer {
 	class StringIter {
 
 		using ptr_type = const char*;
@@ -37,14 +37,18 @@ namespace ws::lexer {
 
 
 			// Iterate.
-			char next()		  noexcept { return *current++; }
-			void incr(int i = 1) noexcept { current += i;	  }
-			void decr(int i = 1) noexcept { current -= i;	  }
+			char next() noexcept { return *current++; }
 
+			void incr(int i) noexcept { current += i; }
+			void decr(int i) noexcept { current -= i; }
+
+			void incr() noexcept { ++current; }
+			void dect() noexcept { --current; }
 
 
 			// View characters.
-			char peek(int i = 0) const noexcept { return *(current + i); }
+			char peek(int i) const noexcept { return *(current + i); }
+			char peek() const noexcept { return *current; }
 
 
 
@@ -53,20 +57,28 @@ namespace ws::lexer {
 				return buffer.size();
 			}
 
-			bool is_end(int offset = 0) const noexcept {
-				return current >= ((buffer.data() + size()) + offset);
+
+			constexpr auto end() const noexcept {
+				return buffer.end();
+			}
+
+
+			constexpr auto begin() const noexcept {
+				return buffer.begin();
+			}
+
+
+			bool is_end() const noexcept {
+				return current >= end();
 			}
 
 
 
 			// Conditional consume.
 			bool match(char expect) noexcept {
-				auto b = (peek(1) == expect);
-
-				// If we have a match, increment the current ptr.
-				if (b) incr();
-
-				return b;
+				return (peek(1) == expect) ?
+					(incr(), true)
+					: false;
 			}
 
 

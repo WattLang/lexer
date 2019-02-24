@@ -8,12 +8,12 @@
 #include "../stringiter/stringiter.h"
 
 
-namespace ws::lexer {
+namespace watt::lexer {
 
 	template <typename T>
 	void consume(
 		const Rules<typename T::value_type>& rules,
-		ws::lexer::StringIter& iter,
+		watt::lexer::StringIter& iter,
 		T& tokens
 	) {
 		rules.at(iter.peek()) (iter, tokens);
@@ -24,7 +24,7 @@ namespace ws::lexer {
 	template <typename T>
 	void lexer(
 		const Rules<typename T::value_type>& rules,
-		ws::lexer::StringIter& iter,
+		watt::lexer::StringIter& iter,
 		T& tokens
 	) {
 		while (not iter.is_end())

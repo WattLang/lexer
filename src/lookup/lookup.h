@@ -4,7 +4,7 @@
 #include <array>
 
 
-namespace ws::lexer {
+namespace watt::lexer {
 	class LookupTable {
 		using table_t   = std::array<bool, 256>;
 		using size_type = table_t::size_type;
@@ -21,18 +21,18 @@ namespace ws::lexer {
 				char p = chars[i];
 
 				while (p != '\0') {
-					table.at(static_cast<size_type>(p)) = true;
+					table[static_cast<size_type>(p)] = true;
 					p = chars[i++];
 				}
 			}
 
 
 			constexpr auto begin() const noexcept { return table.begin(); }
-			constexpr auto end()   const noexcept { return table.end();   }
+			constexpr auto end() const noexcept { return table.end(); }
 
 
 			constexpr bool at(char i) const {
-				return table.at(static_cast<unsigned long>(i));
+				return table[static_cast<unsigned long>(i)];
 			}
 
 
